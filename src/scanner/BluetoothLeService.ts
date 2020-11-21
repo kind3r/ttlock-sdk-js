@@ -7,7 +7,7 @@ import { NodeBleScanner } from "./NodeBleScanner";
 import { ExtendedBluetoothDevice } from "./ExtendedBluetoothDevice";
 
 export { ScannerType } from "./ScannerInterface";
-export const TTLockUUIDs: string[] = ["00001910-0000-1000-8000-00805f9b34fb"];
+export const TTLockUUIDs: string[] = ["1910", "00001910-0000-1000-8000-00805f9b34fb"];
 
 export class BluetoothLeService extends events.EventEmitter {
   private scanner: ScannerInterface;

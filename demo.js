@@ -13,8 +13,8 @@ api.prepareBTService();
 api.startScanLock();
 api.on("foundDevice", async (device) => {
   // if(device.device.advertisement.manufacturerData) {
-    console.log(device.name, device.mAddress, device.lockType);
-    console.log(JSON.stringify(device.device.advertisement));
+    // console.log(device.name, device.mAddress, device.lockType);
+    console.log(device);
   // }
   // await device.device.discoverServicesAsync();
   // console.log(device.device.advertisement);
