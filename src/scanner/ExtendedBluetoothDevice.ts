@@ -1,6 +1,6 @@
 'use strict';
 
-import { LockType } from "../constant/LockType";
+import { LockType } from "../constant/Lock";
 
 export class ExtendedBluetoothDevice {
   static GAP_ADTYPE_LOCAL_NAME_COMPLETE = 0X09;	//!< Complete local name
@@ -94,8 +94,10 @@ export class ExtendedBluetoothDevice {
 
   parseManufacturerData(manufacturerData: Buffer) {
     // TODO: check offset is within the limits of the Buffer
-    // try {
-    console.log(manufacturerData, manufacturerData.length)
+    // console.log(manufacturerData, manufacturerData.length)
+    if(manufacturerData.length < 15) {
+      throw new Error("Invalid manufacturer data length");
+    }
     var offset = 0;
     this.protocolType = manufacturerData.readInt8(offset++);
     this.protocolVersion = manufacturerData.readInt8(offset++);
@@ -188,36 +190,34 @@ export class ExtendedBluetoothDevice {
     // offset += 3 + 4; // Offset in original SDK is + 3, but in scans it's actually +4
     offset = manufacturerData.length - 6; // let's just get the last 6 bytes
     const macBuf = manufacturerData.slice(offset, offset + 6);
-    console.log(offset, macBuf);
     var macArr: string[] = [];
     macBuf.forEach((m: number) => {
       macArr.push(m.toString(16));
     });
     macArr.reverse();
     this.mAddress = macArr.join(':').toUpperCase();
-    // } catch (error) {
-    // console.log(error)
-    // }
   }
 
   getLockType(): LockType {
-    if (this.protocolType == 5 && this.protocolVersion == 3 && this.scene == 7) {
-      this.lockType = LockType.LOCK_TYPE_V3_CAR;
-    }
-    else if (this.protocolType == 10 && this.protocolVersion == 1) {
-      this.lockType = LockType.LOCK_TYPE_CAR;
-    }
-    else if (this.protocolType == 11 && this.protocolVersion == 1) {
-      this.lockType = LockType.LOCK_TYPE_MOBI;
-    }
-    else if (this.protocolType == 5 && this.protocolVersion == 4) {
-      this.lockType = LockType.LOCK_TYPE_V2S_PLUS;
-    }
-    else if (this.protocolType == 5 && this.protocolVersion == 3) {
-      this.lockType = LockType.LOCK_TYPE_V3;
-    }
-    else if ((this.protocolType == 5 && this.protocolVersion == 1) || (this.name != null && this.name.toUpperCase().startsWith("LOCK_"))) {
-      this.lockType = LockType.LOCK_TYPE_V2S;
+    if(this.lockType == LockType.UNKNOWN) {
+      if (this.protocolType == 5 && this.protocolVersion == 3 && this.scene == 7) {
+        this.lockType = LockType.LOCK_TYPE_V3_CAR;
+      }
+      else if (this.protocolType == 10 && this.protocolVersion == 1) {
+        this.lockType = LockType.LOCK_TYPE_CAR;
+      }
+      else if (this.protocolType == 11 && this.protocolVersion == 1) {
+        this.lockType = LockType.LOCK_TYPE_MOBI;
+      }
+      else if (this.protocolType == 5 && this.protocolVersion == 4) {
+        this.lockType = LockType.LOCK_TYPE_V2S_PLUS;
+      }
+      else if (this.protocolType == 5 && this.protocolVersion == 3) {
+        this.lockType = LockType.LOCK_TYPE_V3;
+      }
+      else if ((this.protocolType == 5 && this.protocolVersion == 1) || (this.name != null && this.name.toUpperCase().startsWith("LOCK_"))) {
+        this.lockType = LockType.LOCK_TYPE_V2S;
+      }
     }
     return this.lockType;
   }

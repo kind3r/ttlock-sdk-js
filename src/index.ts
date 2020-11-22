@@ -2,3 +2,4 @@
 
 export { TTLockClient } from "./TTLockClient";
 export { ExtendedBluetoothDevice } from "./scanner/ExtendedBluetoothDevice";
+export { Command } from "./api/Command";

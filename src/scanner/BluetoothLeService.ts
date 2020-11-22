@@ -9,7 +9,11 @@ import { ExtendedBluetoothDevice } from "./ExtendedBluetoothDevice";
 export { ScannerType } from "./ScannerInterface";
 export const TTLockUUIDs: string[] = ["1910", "00001910-0000-1000-8000-00805f9b34fb"];
 
-export class BluetoothLeService extends events.EventEmitter {
+export declare interface BluetoothLeService {
+  on(event: "discover", listener: (device: ExtendedBluetoothDevice) => void): this;
+}
+
+export class BluetoothLeService extends events.EventEmitter implements BluetoothLeService {
   private scanner: ScannerInterface;
 
   constructor(uuids: string[] = TTLockUUIDs, scannerType: ScannerType = "auto") {
@@ -19,9 +23,7 @@ export class BluetoothLeService extends events.EventEmitter {
     }
     if (scannerType == "noble") {
       this.scanner = new NobleScanner(uuids);
-      this.scanner.on("discover", (device: ExtendedBluetoothDevice) => {
-        this.emit("discover", device);
-      });
+      this.scanner.on("discover", this.onDiscover.bind(this));
     } else if (scannerType == "node-ble") {
       this.scanner = new NodeBleScanner(uuids);
     } else {
@@ -35,5 +37,9 @@ export class BluetoothLeService extends events.EventEmitter {
 
   stopScan(): boolean {
     return this.scanner.stopScan();
+  }
+
+  private onDiscover(device: ExtendedBluetoothDevice) {
+    this.emit("discover", device);
   }
 }

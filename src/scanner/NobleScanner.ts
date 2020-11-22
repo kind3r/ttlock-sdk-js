@@ -47,7 +47,7 @@ export class NobleScanner extends events.EventEmitter implements ScannerInterfac
 
   private async startNobleScan(): Promise<void> {
     try {
-      await noble.startScanningAsync(this.uuids, true);
+      await noble.startScanningAsync(this.uuids, false);
       this.scannerState = "scanning";
     } catch (error) {
       console.error(error);
@@ -76,10 +76,18 @@ export class NobleScanner extends events.EventEmitter implements ScannerInterfac
     }
   }
 
-  private onNobleDiscover(peripheral: noble.Peripheral): void {
-    var device = this.createFromPeripheral(peripheral);
+  private async onNobleDiscover(peripheral: noble.Peripheral): Promise<void> {
+    if(this.scannerState != "scanning") {
+      return;
+    }
+    console.log("Stopping scan");
+    await this.stopScan();
+    // noble.reset();
+    var device = await this.createFromPeripheral(peripheral);
+    console.log("Starting scan");
+    await this.startScan();
+
     if (device != null) {
-      // console.info("noble discovered uuid:", peripheral.uuid, " rssi:", peripheral.rssi, " name:", peripheral.advertisement.localName);
       this.emit("discover", device);
     }
   }
@@ -92,7 +100,7 @@ export class NobleScanner extends events.EventEmitter implements ScannerInterfac
     this.scannerState = "stopped";
   }
 
-  private createFromPeripheral(peripheral: noble.Peripheral): ExtendedBluetoothDevice | null {
+  private async createFromPeripheral(peripheral: noble.Peripheral): Promise<ExtendedBluetoothDevice | null> {
     const id = peripheral.id;
     const uuid = peripheral.uuid;
     const name = peripheral.advertisement.localName;
@@ -101,10 +109,43 @@ export class NobleScanner extends events.EventEmitter implements ScannerInterfac
     if (peripheral.advertisement.manufacturerData) {
       manufacturerData = peripheral.advertisement.manufacturerData;
     }
-    const device = new ExtendedBluetoothDevice(id, name, rssi, manufacturerData, peripheral);
-    device.uuid = uuid;
-    
-    return device;
+    try {
+      const services = await this.discoverServices(peripheral);
+      const device = new ExtendedBluetoothDevice(id, name, rssi, manufacturerData, peripheral);
+      device.uuid = uuid;
+      return device;
+    } catch (error) {
+      console.error(error.message);
+    }
+
+    return null;
+  }
+
+  private async discoverServices(peripheral: noble.Peripheral): Promise<noble.Service[] | null> {
+    // WIP
+    // in order to read services scan needs to be stopped
+    try {
+      console.log("State 1:", peripheral.state);
+      console.log("Connecting");
+      await peripheral.connectAsync();
+      console.log("State 2:", peripheral.state);
+      console.log("Discovering services");
+      const services = await peripheral.discoverAllServicesAndCharacteristicsAsync();
+      console.log("Disconnecting");
+      await peripheral.disconnectAsync();
+      // maybe read some of the important data
+      // console.log(services);
+      // services.services.forEach((service) => {
+      //   console.log('uuid:', service.uuid, 'characteristics:');
+      //   service.characteristics.forEach((characteristic) => {
+      //     console.log('    ', characteristic.toString());
+      //   });
+      // });
+      return services.services;
+    } catch (error) {
+      console.error(error);
+      return null;
+    }
   }
 }
 
