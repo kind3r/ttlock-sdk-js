@@ -97,9 +97,9 @@ export class NobleScanner extends events.EventEmitter implements ScannerInterfac
     const uuid = peripheral.uuid;
     const name = peripheral.advertisement.localName;
     const rssi = peripheral.rssi;
-    var manufacturerData = Buffer.from([]);
+    let manufacturerData = Buffer.from([]);
     if (peripheral.advertisement.manufacturerData) {
-      const manufacturerData = peripheral.advertisement.manufacturerData;
+      manufacturerData = peripheral.advertisement.manufacturerData;
     }
     const device = new ExtendedBluetoothDevice(id, name, rssi, manufacturerData, peripheral);
     device.uuid = uuid;
