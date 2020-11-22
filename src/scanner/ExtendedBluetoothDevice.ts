@@ -50,7 +50,7 @@ export class ExtendedBluetoothDevice {
   parkStatus: number = 0;
 
   constructor(id: string, name: string, rssi: number, manufacturerData: Buffer, device?: any) {
-    if(device) {
+    if (device) {
       this.device = device;
     }
     this.id = id;
@@ -94,6 +94,8 @@ export class ExtendedBluetoothDevice {
 
   parseManufacturerData(manufacturerData: Buffer) {
     // TODO: check offset is within the limits of the Buffer
+    // try {
+    console.log(manufacturerData, manufacturerData.length)
     var offset = 0;
     this.protocolType = manufacturerData.readInt8(offset++);
     this.protocolVersion = manufacturerData.readInt8(offset++);
@@ -193,6 +195,9 @@ export class ExtendedBluetoothDevice {
     });
     macArr.reverse();
     this.mAddress = macArr.join(':').toUpperCase();
+    // } catch (error) {
+    // console.log(error)
+    // }
   }
 
   getLockType(): LockType {
