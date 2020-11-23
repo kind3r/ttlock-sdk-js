@@ -2,10 +2,10 @@
 
 import { ExtendedBluetoothDevice } from "./ExtendedBluetoothDevice";
 import { ScannerInterface, ScannerStateType } from "./ScannerInterface";
-import events from "events";
+import { EventEmitter } from "events";
 const { createBluetooth } = require('node-ble');
 
-export class NodeBleScanner extends events.EventEmitter implements ScannerInterface {
+export class NodeBleScanner extends EventEmitter implements ScannerInterface {
   scannerState: ScannerStateType = "unknown";
   bluetooth: any;
   destroy: any;

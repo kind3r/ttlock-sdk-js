@@ -1,6 +1,6 @@
 'use strict';
 
-import events from "events";
+import { EventEmitter } from "events";
 import { ScannerInterface, ScannerType } from "./ScannerInterface";
 import { NobleScanner } from "./NobleScanner";
 import { NodeBleScanner } from "./NodeBleScanner";
@@ -13,7 +13,7 @@ export declare interface BluetoothLeService {
   on(event: "discover", listener: (device: ExtendedBluetoothDevice) => void): this;
 }
 
-export class BluetoothLeService extends events.EventEmitter implements BluetoothLeService {
+export class BluetoothLeService extends EventEmitter implements BluetoothLeService {
   private scanner: ScannerInterface;
 
   constructor(uuids: string[] = TTLockUUIDs, scannerType: ScannerType = "auto") {

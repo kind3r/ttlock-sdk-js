@@ -1,13 +1,14 @@
 'use strict';
 
 import { LockType } from "../constant/Lock";
+import { DeviceInterface } from "./DeviceInterface";
 
 export class ExtendedBluetoothDevice {
   static GAP_ADTYPE_LOCAL_NAME_COMPLETE = 0X09;	//!< Complete local name
   static GAP_ADTYPE_POWER_LEVEL = 0X0A;	//!< TX Power Level: 0xXX: -127 to +127 dBm
   static GAP_ADTYPE_MANUFACTURER_SPECIFIC = 0XFF; //!< Manufacturer Specific Data: first 2 octets contain the Company Inentifier Code followed by the additional manufacturer specific data
 
-  device: any;
+  device: DeviceInterface;
   id: string = "";
   uuid: string = "";
   name: string = "";
@@ -49,14 +50,14 @@ export class ExtendedBluetoothDevice {
   disconnectStatus: number = 0;
   parkStatus: number = 0;
 
-  constructor(id: string, name: string, rssi: number, manufacturerData: Buffer, device?: any) {
-    if (device) {
-      this.device = device;
+  constructor(device: DeviceInterface) {
+    this.device = device;
+    this.id = device.id;
+    this.name = device.name;
+    this.rssi = device.rssi;
+    if (device.manufacturerData.length >= 15) {
+      this.parseManufacturerData(device.manufacturerData);
     }
-    this.id = id;
-    this.name = name;
-    this.rssi = rssi;
-    this.parseManufacturerData(manufacturerData);
   }
 
   /** Maybe we will use this to manually parse the raw BLE data ? */
@@ -95,8 +96,8 @@ export class ExtendedBluetoothDevice {
   parseManufacturerData(manufacturerData: Buffer) {
     // TODO: check offset is within the limits of the Buffer
     // console.log(manufacturerData, manufacturerData.length)
-    if(manufacturerData.length < 15) {
-      throw new Error("Invalid manufacturer data length");
+    if (manufacturerData.length < 15) {
+      throw new Error("Invalid manufacturer data length:" + manufacturerData.length.toString());
     }
     var offset = 0;
     this.protocolType = manufacturerData.readInt8(offset++);
@@ -199,7 +200,7 @@ export class ExtendedBluetoothDevice {
   }
 
   getLockType(): LockType {
-    if(this.lockType == LockType.UNKNOWN) {
+    if (this.lockType == LockType.UNKNOWN) {
       if (this.protocolType == 5 && this.protocolVersion == 3 && this.scene == 7) {
         this.lockType = LockType.LOCK_TYPE_V3_CAR;
       }
