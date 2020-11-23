@@ -1,9 +1,9 @@
 'use strict';
 
 import events from "events";
+import { TTBluetoothDevice } from "./device/TTBluetoothDevice";
 
 import { BluetoothLeService, TTLockUUIDs, ScannerType } from "./scanner/BluetoothLeService";
-import { ExtendedBluetoothDevice } from "./scanner/ExtendedBluetoothDevice";
 import { DeviceDatabase } from "./store/DeviceDatabase";
 
 export declare interface Settings {
@@ -13,7 +13,7 @@ export declare interface Settings {
 }
 
 export declare interface TTLockClient {
-  on(event: "foundDevice", listener: (device: ExtendedBluetoothDevice) => void): this;
+  on(event: "foundDevice", listener: (device: TTBluetoothDevice) => void): this;
 }
 
 export class TTLockClient extends events.EventEmitter implements TTLockClient {
@@ -43,8 +43,6 @@ export class TTLockClient extends events.EventEmitter implements TTLockClient {
     }
   }
 
-
-
   prepareBTService(): boolean {
     if (this.bleService == null) {
       this.bleService = new BluetoothLeService(this.uuids, this.scannerType);
@@ -61,21 +59,21 @@ export class TTLockClient extends events.EventEmitter implements TTLockClient {
     return true;
   }
 
-  startScanLock(): boolean {
+  async startScanLock(): Promise<boolean> {
     if (this.bleService != null) {
-      return this.bleService.startScan();
+      return await this.bleService.startScan();
+    }
+    return false;
+  }
+
+  async stopScanLock(): Promise<boolean> {
+    if (this.bleService != null) {
+      return await this.bleService.stopScan();
     }
     return true;
   }
 
-  stopScanLock(): boolean {
-    if (this.bleService != null) {
-      return this.bleService.stopScan();
-    }
-    return true;
-  }
-
-  private onScanResult(device: ExtendedBluetoothDevice): void {
+  private onScanResult(device: TTBluetoothDevice): void {
     // we should index and store the new device
     // we can use a Map for this, and maybe nconf for persistent storage
     // do we need to store the ExtendedBluetoothDevice or something else

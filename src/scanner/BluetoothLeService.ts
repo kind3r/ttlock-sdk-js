@@ -3,43 +3,56 @@
 import { EventEmitter } from "events";
 import { ScannerInterface, ScannerType } from "./ScannerInterface";
 import { NobleScanner } from "./NobleScanner";
-import { NodeBleScanner } from "./NodeBleScanner";
-import { ExtendedBluetoothDevice } from "./ExtendedBluetoothDevice";
+import { TTBluetoothDevice } from "../device/TTBluetoothDevice";
+import { DeviceInterface } from "./DeviceInterface";
 
 export { ScannerType } from "./ScannerInterface";
 export const TTLockUUIDs: string[] = ["1910", "00001910-0000-1000-8000-00805f9b34fb"];
 
 export declare interface BluetoothLeService {
-  on(event: "discover", listener: (device: ExtendedBluetoothDevice) => void): this;
+  on(event: "discover", listener: (device: TTBluetoothDevice) => void): this;
 }
 
 export class BluetoothLeService extends EventEmitter implements BluetoothLeService {
   private scanner: ScannerInterface;
+  private devices: Map<string, TTBluetoothDevice>;
 
   constructor(uuids: string[] = TTLockUUIDs, scannerType: ScannerType = "auto") {
     super();
+    this.devices = new Map();
     if (scannerType == "auto") {
       scannerType = "noble";
     }
     if (scannerType == "noble") {
       this.scanner = new NobleScanner(uuids);
       this.scanner.on("discover", this.onDiscover.bind(this));
-    } else if (scannerType == "node-ble") {
-      this.scanner = new NodeBleScanner(uuids);
     } else {
       throw "Invalid parameters";
     }
   }
 
-  startScan(): boolean {
-    return this.scanner.startScan();
+  async startScan(): Promise<boolean> {
+    return await this.scanner.startScan();
   }
 
-  stopScan(): boolean {
-    return this.scanner.stopScan();
+  async stopScan(): Promise<boolean> {
+    return await this.scanner.stopScan();
   }
 
-  private onDiscover(device: ExtendedBluetoothDevice) {
-    this.emit("discover", device);
+  private onDiscover(btDevice: DeviceInterface) {
+    // TODO: move device storage to TTLockClient
+    // check if the device was previously discovered and update
+    if(this.devices.has(btDevice.id)) {
+      const device = this.devices.get(btDevice.id);
+      if (typeof device != 'undefined') {
+        device.updateFromDevice(btDevice);
+        // I don't think we should resend the discover on update
+        // this.emit("discover", device);
+      }
+    } else {
+      const device = TTBluetoothDevice.createFromDevice(btDevice);
+      this.devices.set(btDevice.id, device);
+      this.emit("discover", device);
+    }
   }
 }

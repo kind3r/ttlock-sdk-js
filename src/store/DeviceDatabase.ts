@@ -1,14 +1,14 @@
 'use strict';
 
-import { ExtendedBluetoothDevice } from "../scanner/ExtendedBluetoothDevice";
 import { BluetoothLeService } from "../scanner/BluetoothLeService";
+import { TTBluetoothDevice } from "../device/TTBluetoothDevice";
 
 /**
  * Store data about devices (parmeters, keys etc)
  */
 export class DeviceDatabase {
   private bleService: BluetoothLeService | null = null;
-  private devices: Map<string, ExtendedBluetoothDevice> = new Map();
+  private devices: Map<string, TTBluetoothDevice> = new Map();
 
   constructor() {
 
@@ -21,7 +21,7 @@ export class DeviceDatabase {
     return true;
   }
 
-  addOrUpdateDevice(device: ExtendedBluetoothDevice): boolean {
+  addOrUpdateDevice(device: TTBluetoothDevice): boolean {
 
     return true;
   }

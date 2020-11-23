@@ -1,5 +1,7 @@
 'use strict';
 
+import { TTDevice } from "../device/TTDevice";
+
 export enum LockType {
   UNKNOWN = 0,
   LOCK_TYPE_V1 = 1,
@@ -106,6 +108,30 @@ export class LockVersion {
       default:
         return null;
     }
+  }
+
+  static getLockType(device: TTDevice): LockType {
+    if (device.lockType == LockType.UNKNOWN) {
+      if (device.protocolType == 5 && device.protocolVersion == 3 && device.scene == 7) {
+        device.lockType = LockType.LOCK_TYPE_V3_CAR;
+      }
+      else if (device.protocolType == 10 && device.protocolVersion == 1) {
+        device.lockType = LockType.LOCK_TYPE_CAR;
+      }
+      else if (device.protocolType == 11 && device.protocolVersion == 1) {
+        device.lockType = LockType.LOCK_TYPE_MOBI;
+      }
+      else if (device.protocolType == 5 && device.protocolVersion == 4) {
+        device.lockType = LockType.LOCK_TYPE_V2S_PLUS;
+      }
+      else if (device.protocolType == 5 && device.protocolVersion == 3) {
+        device.lockType = LockType.LOCK_TYPE_V3;
+      }
+      else if ((device.protocolType == 5 && device.protocolVersion == 1) || (device.name != null && device.name.toUpperCase().startsWith("LOCK_"))) {
+        device.lockType = LockType.LOCK_TYPE_V2S;
+      }
+    }
+    return device.lockType;
   }
 
   toString(): string {

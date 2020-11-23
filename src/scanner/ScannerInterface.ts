@@ -1,7 +1,7 @@
 'use strict';
 
 import { EventEmitter } from "events";
-import { ExtendedBluetoothDevice } from "./ExtendedBluetoothDevice";
+import { DeviceInterface } from "./DeviceInterface";
 
 export declare type ScannerType = "noble" | "node-ble" | "auto";
 
@@ -9,7 +9,7 @@ export declare type ScannerStateType = "unknown" | "starting" | "scanning" | "st
 
 export declare interface ScannerInterface extends EventEmitter {
   scannerState: ScannerStateType;
-  startScan(): boolean;
-  stopScan(): boolean;
-  on(event: "discover", listener: (device: ExtendedBluetoothDevice) => void): this;
+  startScan(): Promise<boolean>;
+  stopScan(): Promise<boolean>;
+  on(event: "discover", listener: (device: DeviceInterface) => void): this;
 }
