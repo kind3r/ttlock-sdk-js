@@ -214,7 +214,7 @@ class NobleService implements ServiceInterface {
     }
 
     for (let [uuid, characteristic] of this.characteristics) {
-      characteristic.read();
+      await characteristic.read();
     }
 
     return this.characteristics;
@@ -292,7 +292,7 @@ class NobleCharacteristic extends EventEmitter implements CharacteristicInterfac
       this.device.resetBusy();
       throw new Error("NobleDevice is not connected");
     }
-    
+
     this.device.resetBusy();
     throw new Error("Method not implemented.");
   }

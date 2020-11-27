@@ -46,15 +46,15 @@ export class TTBluetoothDevice extends TTDevice implements TTBluetoothDevice {
         let service = this.device.services.get("1800");
         if (typeof service != "undefined") {
           await service.readCharacteristics();
-          this.putCharacteristic(service, "2a00", this.name);
+          this.putCharacteristicValue(service, "2a00", "name");
         }
         service = this.device.services.get("180a");
         if (typeof service != "undefined") {
           await service.readCharacteristics();
-          this.putCharacteristic(service, "2a29", this.manufacturer);
-          this.putCharacteristic(service, "2a24", this.model);
-          this.putCharacteristic(service, "2a27", this.hardware);
-          this.putCharacteristic(service, "2a26", this.firmware);
+          this.putCharacteristicValue(service, "2a29", "manufacturer");
+          this.putCharacteristicValue(service, "2a24", "model");
+          this.putCharacteristicValue(service, "2a27", "hardware");
+          this.putCharacteristicValue(service, "2a26", "firmware");
         }
         this.connected = true;
         return true;
@@ -63,10 +63,10 @@ export class TTBluetoothDevice extends TTDevice implements TTBluetoothDevice {
     return false;
   }
 
-  private putCharacteristic(service: ServiceInterface, uuid: string, property: any) {
+  private putCharacteristicValue(service: ServiceInterface, uuid: string, property: string) {
     const value = service.characteristics.get(uuid);
     if (typeof value != "undefined" && typeof value.lastValue != "undefined") {
-      property = value.toString();
+      Reflect.set(this, property, value.toString());
     }
   }
 
