@@ -261,9 +261,6 @@ class NobleCharacteristic extends EventEmitter implements CharacteristicInterfac
     this.name = characteristic.name;
     this.type = characteristic.type;
     this.properties = characteristic.properties;
-    this.characteristic.on("read", (data, isNotification) => {
-      console.log("Read", this.uuid, data.toString('hex'), data.toString('ascii'));
-    });
   }
 
   discoverDescriptors(): Promise<Map<string, DescriptorInterface>> {
@@ -276,7 +273,6 @@ class NobleCharacteristic extends EventEmitter implements CharacteristicInterfac
       this.device.resetBusy();
       throw new Error("NobleDevice is not connected");
     }
-    console.log("Reading ", this.characteristic.toString());
     try {
       this.lastValue = await this.characteristic.readAsync();
     } catch (error) {
