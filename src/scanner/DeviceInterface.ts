@@ -39,7 +39,7 @@ export declare interface CharacteristicInterface extends EventEmitter {
   lastValue?: Buffer;
   descriptors: Map<string, DescriptorInterface>;
   discoverDescriptors(): Promise<Map<string, DescriptorInterface>>;
-  read(): Promise<Buffer>;
+  read(): Promise<Buffer | undefined>;
   write(data: Buffer, notify: boolean): Promise<void>;
   notify(notify: boolean): Promise<void>;
   subscribe(): Promise<void>;

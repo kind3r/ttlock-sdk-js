@@ -227,7 +227,7 @@ class NobleCharacteristic extends EventEmitter implements CharacteristicInterfac
     throw new Error("Method not implemented.");
   }
 
-  async read(): Promise<Buffer> {
+  async read(): Promise<Buffer | undefined> {
     let wasConnected = false;
     if (!this.device.connected) {
       await this.device.connect();
@@ -235,7 +235,11 @@ class NobleCharacteristic extends EventEmitter implements CharacteristicInterfac
       wasConnected = true;
     }
     console.log("Reading ", this.characteristic.toString());
-    this.lastValue = await this.characteristic.readAsync();
+    try {
+      this.lastValue = await this.characteristic.readAsync();
+    } catch (error) {
+      console.error(error);
+    }
     if (!wasConnected) {
       await this.device.disconnect();
     }

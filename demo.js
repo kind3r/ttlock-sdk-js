@@ -20,6 +20,8 @@ api.on("foundDevice", async (device) => {
     const services = device.device.services;
     console.log(device.device.toJSON());
     console.log();
+    console.log(device.toJSON());
+    console.log();
   // }
   // await device.device.discoverServicesAsync();
   // console.log(device.device.advertisement);
