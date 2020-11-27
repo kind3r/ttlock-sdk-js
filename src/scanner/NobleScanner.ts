@@ -86,7 +86,7 @@ export class NobleScanner extends EventEmitter implements ScannerInterface {
       this.devices.add(peripheral.id);
       // first time found, scan the services
       const nobleDevice = new NobleDevice(peripheral);
-      await nobleDevice.discoverServices();
+      // await nobleDevice.discoverServices();
       this.emit("discover", nobleDevice);
     }
   }

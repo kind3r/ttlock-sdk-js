@@ -6,6 +6,10 @@ export class TTDevice {
   id: string = "";
   uuid: string = "";
   name: string = "";
+  manufacturer: string = "unknown";
+  model: string = "unknown";
+  hardware: string = "unknown";
+  firmware: string = "unknown";
   address: string = "";
   rssi: number = 0;
   /** @type {byte} */

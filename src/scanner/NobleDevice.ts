@@ -16,6 +16,7 @@ export class NobleDevice implements DeviceInterface {
   mtu: number = 20;
   manufacturerData: Buffer;
   services: Map<string, NobleService>;
+  busy: boolean = false;
   private peripheral: Peripheral;
 
   constructor(peripheral: Peripheral) {
@@ -33,8 +34,23 @@ export class NobleDevice implements DeviceInterface {
     } else {
       this.manufacturerData = Buffer.from([]);
     }
-    // TODO check already discovered services
     this.services = new Map();
+  }
+
+  checkBusy(): boolean {
+    if (this.busy) {
+      throw new Error("NobleDevice is busy");
+    } else {
+      this.busy = true;
+      return true;
+    }
+  }
+
+  resetBusy(): boolean {
+    if (this.busy) {
+      this.busy = false;
+    }
+    return this.busy;
   }
 
   async connect(): Promise<boolean> {
@@ -51,6 +67,7 @@ export class NobleDevice implements DeviceInterface {
       try {
         await this.peripheral.disconnectAsync();
         this.connected = false;
+        this.services = new Map();
         return true;
       } catch (error) {
         console.error(error);
@@ -65,11 +82,13 @@ export class NobleDevice implements DeviceInterface {
    */
   async discoverServices(): Promise<Map<string, ServiceInterface>> {
     try {
+      this.checkBusy();
       if (!this.connected) {
-        await this.connect();
+        this.resetBusy();
+        throw new Error("NobleDevice not connected");
       }
       const snc = await this.peripheral.discoverAllServicesAndCharacteristicsAsync();
-      // await this.disconnect();
+      this.resetBusy();
       this.services = new Map();
       snc.services.forEach((service) => {
         const s = new NobleService(this, service);
@@ -78,6 +97,7 @@ export class NobleDevice implements DeviceInterface {
       return this.services;
     } catch (error) {
       console.error(error);
+      this.resetBusy();
       return new Map();
     }
   }
@@ -88,7 +108,9 @@ export class NobleDevice implements DeviceInterface {
   async readCharacteristics(): Promise<boolean> {
     try {
       if (!this.connected) {
-        await this.connect();
+        throw new Error("NobleDevice not connected");
+      }
+      if (this.services.size == 0) {
         await this.discoverServices();
       }
       for (let [uuid, service] of this.services) {
@@ -102,7 +124,6 @@ export class NobleDevice implements DeviceInterface {
           }
         }
       }
-      // await this.disconnect();
       return true;
     } catch (error) {
       console.error(error);
@@ -118,8 +139,8 @@ export class NobleDevice implements DeviceInterface {
     return text;
   }
 
-  toJSON(): string {
-    let json: Record<string,any> = {
+  toJSON(asObject: boolean = false): string | Object {
+    let json: Record<string, any> = {
       id: this.id,
       uuid: this.uuid,
       name: this.name,
@@ -130,34 +151,16 @@ export class NobleDevice implements DeviceInterface {
       mtu: this.mtu,
       services: {}
     };
-    let services: Record<string,any> = {}
+    let services: Record<string, any> = {}
     this.services.forEach((service) => {
-      json.services[service.uuid] = {
-        uuid: service.uuid,
-        name: service.name,
-        type: service.type,
-        characteristics: {}
-      };
-      service.characteristics.forEach((characteristic) => {
-        json.services[service.uuid].characteristics[characteristic.uuid] = {
-          uuid: characteristic.uuid,
-          name: characteristic.name,
-          type: characteristic.type,
-          properties: characteristic.properties,
-          value: characteristic.lastValue?.toString("ascii"),
-          descriptors: {}
-        }
-        characteristic.descriptors.forEach((descriptor) => {
-          json.services[service.uuid].characteristics[characteristic.uuid].descriptors[descriptor.uuid] = {
-            uuid: descriptor.uuid,
-            name: descriptor.name,
-            type: descriptor.type
-          }
-        })
-      });
+      json.services[service.uuid] = service.toJSON(true);
     });
 
-    return JSON.stringify(json, null, 2);
+    if (asObject) {
+      return json;
+    } else {
+      return JSON.stringify(json);
+    }
   }
 }
 
@@ -189,7 +192,9 @@ class NobleService implements ServiceInterface {
 
   async discoverCharacteristics(): Promise<Map<string, CharacteristicInterface>> {
     try {
+      this.device.checkBusy();
       const characteristics = await this.service.discoverCharacteristicsAsync();
+      this.device.resetBusy();
       this.characteristics = new Map();
       characteristics.forEach((characteristic) => {
         const c = new NobleCharacteristic(this.device, characteristic);
@@ -198,7 +203,38 @@ class NobleService implements ServiceInterface {
       return this.characteristics;
     } catch (error) {
       console.error(error);
+      this.device.resetBusy();
       return new Map();
+    }
+  }
+
+  async readCharacteristics(): Promise<Map<string, CharacteristicInterface>> {
+    if (this.characteristics.size == 0) {
+      await this.discoverCharacteristics();
+    }
+
+    for (let [uuid, characteristic] of this.characteristics) {
+      characteristic.read();
+    }
+
+    return this.characteristics;
+  }
+
+  toJSON(asObject: boolean): string | Object {
+    let json: Record<string, any> = {
+      uuid: this.uuid,
+      name: this.name,
+      type: this.type,
+      characteristics: {}
+    };
+    this.characteristics.forEach((characteristic) => {
+      json.characteristics[characteristic.uuid] = characteristic.toJSON(true);
+    });
+
+    if (asObject) {
+      return json;
+    } else {
+      return JSON.stringify(json);
     }
   }
 
@@ -235,12 +271,10 @@ class NobleCharacteristic extends EventEmitter implements CharacteristicInterfac
   }
 
   async read(): Promise<Buffer | undefined> {
-    let wasConnected = false;
+    this.device.checkBusy();
     if (!this.device.connected) {
-      await this.device.connect();
-      await this.device.discoverServices();
-    } else {
-      wasConnected = true;
+      this.device.resetBusy();
+      throw new Error("NobleDevice is not connected");
     }
     console.log("Reading ", this.characteristic.toString());
     try {
@@ -248,13 +282,15 @@ class NobleCharacteristic extends EventEmitter implements CharacteristicInterfac
     } catch (error) {
       console.error(error);
     }
-    if (!wasConnected) {
-      await this.device.disconnect();
-    }
     return this.lastValue;
   }
 
   write(data: Buffer, notify: boolean): Promise<void> {
+    this.device.checkBusy();
+    if (!this.device.connected) {
+      this.device.resetBusy();
+      throw new Error("NobleDevice is not connected");
+    }
     throw new Error("Method not implemented.");
   }
 
@@ -266,6 +302,26 @@ class NobleCharacteristic extends EventEmitter implements CharacteristicInterfac
     throw new Error("Method not implemented.");
   }
 
+  toJSON(asObject: boolean): string | Object {
+    let json: Record<string, any> = {
+      uuid: this.uuid,
+      name: this.name,
+      type: this.type,
+      properties: this.properties,
+      value: this.lastValue?.toString(),
+      descriptors: {}
+    }
+    this.descriptors.forEach((descriptor) => {
+      json.descriptors[this.uuid] = this.toJSON(true);
+    });
+
+    if (asObject) {
+      return json;
+    } else {
+      return JSON.stringify(json);
+    }
+  }
+
   toString(): string {
     return this.characteristic.toString();
   }
@@ -275,6 +331,7 @@ class NobleDescriptor implements DescriptorInterface {
   uuid: string;
   name?: string | undefined;
   type?: string | undefined;
+  lastValue?: Buffer;
   private device: NobleDevice;
   private descriptor: Descriptor;
 
@@ -287,11 +344,35 @@ class NobleDescriptor implements DescriptorInterface {
   }
 
   readValue(): Promise<Buffer> {
+    this.device.checkBusy();
+    if (!this.device.connected) {
+      this.device.resetBusy();
+      throw new Error("NobleDevice is not connected");
+    }
     throw new Error("Method not implemented.");
   }
 
   writeValue(data: Buffer): Promise<void> {
+    this.device.checkBusy();
+    if (!this.device.connected) {
+      this.device.resetBusy();
+      throw new Error("NobleDevice is not connected");
+    }
     throw new Error("Method not implemented.");
+  }
+
+  toJSON(asObject: boolean = false) {
+    const json = {
+      uuid: this.uuid,
+      name: this.name,
+      type: this.type
+    }
+
+    if (asObject) {
+      return json;
+    } else {
+      return JSON.stringify(json);
+    }
   }
 
   toString(): string {

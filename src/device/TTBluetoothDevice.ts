@@ -1,7 +1,8 @@
 'use strict';
 
+import { type } from "os";
 import { LockType, LockVersion } from "../constant/Lock";
-import { DeviceInterface } from "../scanner/DeviceInterface";
+import { DeviceInterface, ServiceInterface } from "../scanner/DeviceInterface";
 import { TTDevice } from "./TTDevice";
 
 export declare interface TTBluetoothDevice {
@@ -10,6 +11,7 @@ export declare interface TTBluetoothDevice {
 
 export class TTBluetoothDevice extends TTDevice implements TTBluetoothDevice {
   device?: DeviceInterface;
+  connected: boolean = false;
 
   private constructor() {
     super();
@@ -17,13 +19,8 @@ export class TTBluetoothDevice extends TTDevice implements TTBluetoothDevice {
 
   static createFromDevice(device: DeviceInterface): TTBluetoothDevice {
     const bDevice = new TTBluetoothDevice();
-    bDevice.device = device;
     bDevice.id = device.id;
-    bDevice.name = device.name;
-    bDevice.rssi = device.rssi;
-    if (device.manufacturerData.length >= 15) {
-      bDevice.parseManufacturerData(device.manufacturerData);
-    }
+    bDevice.updateFromDevice(device);
     return bDevice;
   }
 
@@ -39,6 +36,44 @@ export class TTBluetoothDevice extends TTDevice implements TTBluetoothDevice {
       return true;
     }
     return false;
+  }
+
+  async connect(): Promise<boolean> {
+    if (this.device?.connectable) {
+      if (await this.device?.connect()) {
+        await this.device?.discoverServices();
+        // update some basic information
+        let service = this.device.services.get("1800");
+        if (typeof service != "undefined") {
+          await service.readCharacteristics();
+          this.putCharacteristic(service, "2a00", this.name);
+        }
+        service = this.device.services.get("180a");
+        if (typeof service != "undefined") {
+          await service.readCharacteristics();
+          this.putCharacteristic(service, "2a29", this.manufacturer);
+          this.putCharacteristic(service, "2a24", this.model);
+          this.putCharacteristic(service, "2a27", this.hardware);
+          this.putCharacteristic(service, "2a26", this.firmware);
+        }
+        this.connected = true;
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private putCharacteristic(service: ServiceInterface, uuid: string, property: any) {
+    const value = service.characteristics.get(uuid);
+    if (typeof value != "undefined" && typeof value.lastValue != "undefined") {
+      property = value.toString();
+    }
+  }
+
+  async disconnect() {
+    if (await this.device?.disconnect()) {
+      this.connected = false;
+    }
   }
 
   parseManufacturerData(manufacturerData: Buffer) {
