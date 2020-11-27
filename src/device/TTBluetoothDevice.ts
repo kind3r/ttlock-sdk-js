@@ -66,7 +66,7 @@ export class TTBluetoothDevice extends TTDevice implements TTBluetoothDevice {
   private putCharacteristicValue(service: ServiceInterface, uuid: string, property: string) {
     const value = service.characteristics.get(uuid);
     if (typeof value != "undefined" && typeof value.lastValue != "undefined") {
-      Reflect.set(this, property, value.toString());
+      Reflect.set(this, property, value.lastValue.toString());
     }
   }
 
