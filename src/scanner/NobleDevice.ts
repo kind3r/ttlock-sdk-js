@@ -91,7 +91,9 @@ export class NobleDevice implements DeviceInterface {
           if (characteristic.properties.includes("read")) {
             console.log("Reading", uuid);
             const data = await characteristic.read();
-            console.log("Data", data.toString("ascii"));
+            if (typeof data != "undefined") {
+              console.log("Data", data.toString("ascii"));
+            }
           }
         }
       }
