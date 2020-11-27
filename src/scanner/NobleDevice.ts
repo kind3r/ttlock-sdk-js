@@ -282,6 +282,7 @@ class NobleCharacteristic extends EventEmitter implements CharacteristicInterfac
     } catch (error) {
       console.error(error);
     }
+    this.device.resetBusy();
     return this.lastValue;
   }
 
@@ -291,6 +292,8 @@ class NobleCharacteristic extends EventEmitter implements CharacteristicInterfac
       this.device.resetBusy();
       throw new Error("NobleDevice is not connected");
     }
+    
+    this.device.resetBusy();
     throw new Error("Method not implemented.");
   }
 
@@ -349,6 +352,8 @@ class NobleDescriptor implements DescriptorInterface {
       this.device.resetBusy();
       throw new Error("NobleDevice is not connected");
     }
+
+    this.device.resetBusy();
     throw new Error("Method not implemented.");
   }
 
@@ -358,6 +363,8 @@ class NobleDescriptor implements DescriptorInterface {
       this.device.resetBusy();
       throw new Error("NobleDevice is not connected");
     }
+
+    this.device.resetBusy();
     throw new Error("Method not implemented.");
   }
 
