@@ -65,9 +65,11 @@ export class NobleDevice implements DeviceInterface {
    */
   async discoverServices(): Promise<Map<string, ServiceInterface>> {
     try {
-      await this.connect();
+      if (!this.connected) {
+        await this.connect();
+      }
       const snc = await this.peripheral.discoverAllServicesAndCharacteristicsAsync();
-      await this.disconnect();
+      // await this.disconnect();
       this.services = new Map();
       snc.services.forEach((service) => {
         const s = new NobleService(this, service);
@@ -85,7 +87,10 @@ export class NobleDevice implements DeviceInterface {
    */
   async readCharacteristics(): Promise<boolean> {
     try {
-      await this.connect();
+      if (!this.connected) {
+        await this.connect();
+        await this.discoverServices();
+      }
       for (let [uuid, service] of this.services) {
         for (let [uuid, characteristic] of service.characteristics) {
           if (characteristic.properties.includes("read")) {
@@ -97,7 +102,7 @@ export class NobleDevice implements DeviceInterface {
           }
         }
       }
-      await this.disconnect();
+      // await this.disconnect();
       return true;
     } catch (error) {
       console.error(error);
@@ -233,6 +238,7 @@ class NobleCharacteristic extends EventEmitter implements CharacteristicInterfac
     let wasConnected = false;
     if (!this.device.connected) {
       await this.device.connect();
+      await this.device.discoverServices();
     } else {
       wasConnected = true;
     }
