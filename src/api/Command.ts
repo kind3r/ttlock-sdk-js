@@ -177,6 +177,11 @@ export class Command {
       ]),
     ]);
 
+    command = Buffer.concat([
+      command,
+      data
+    ]);
+
     const crc = CodecUtils.crccompute(command);
     command = Buffer.concat([
       command,

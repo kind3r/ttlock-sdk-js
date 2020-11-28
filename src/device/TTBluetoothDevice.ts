@@ -7,6 +7,7 @@ import { sleep } from "../util/Timing";
 import { TTDevice } from "./TTDevice";
 
 const CRLF = "0d0a";
+const MTU = 20;
 
 export declare interface TTBluetoothDevice {
   on(event: "connected", listener: () => void): this;
@@ -97,7 +98,7 @@ export class TTBluetoothDevice extends TTDevice implements TTBluetoothDevice {
       const characteristic = service.characteristics.get("fff4");
       if (typeof characteristic != "undefined") {
         characteristic.subscribe();
-        characteristic.on("dataRead", this.onIncommingData.bind(this));
+        characteristic.on("dataRead", this.onIncomingData.bind(this));
       }
     }
   }
@@ -125,14 +126,17 @@ export class TTBluetoothDevice extends TTDevice implements TTBluetoothDevice {
           if (waitForResponse) {
             this.waitingForResponse = true;
           }
+          console.log("Sending command:", data.toString("hex"));
           do {
             const remaining = data.length - index;
-            await characteristic?.write(data.subarray(index, index + Math.min(20, remaining) + 1), true);
+            await characteristic?.write(data.subarray(index, index + Math.min(MTU, remaining) + 1), true);
             await sleep(50);
+            index += MTU;
           } while (index < data.length);
         }
         // wait for a response
         if (waitForResponse) {
+          console.log("Waiting for response");
           let cycles = 0;
           while (this.responses.length == 0) {
             cycles++;
@@ -149,7 +153,7 @@ export class TTBluetoothDevice extends TTDevice implements TTBluetoothDevice {
     }
   }
 
-  private onIncommingData(data: Buffer) {
+  private onIncomingData(data: Buffer) {
     console.log("Received data:", data.toString("hex"));
     this.incomingDataBuffer = Buffer.concat([this.incomingDataBuffer, data]);
     console.log("Incoming data buffer:", this.incomingDataBuffer.toString("hex"));

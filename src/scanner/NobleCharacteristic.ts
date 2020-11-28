@@ -26,7 +26,6 @@ export class NobleCharacteristic extends EventEmitter implements CharacteristicI
     this.type = characteristic.type;
     this.properties = characteristic.properties;
     this.characteristic.on("read", this.onRead.bind(this));
-    this.characteristic.on("notify", this.onNotify.bind(this));
   }
 
   async discoverDescriptors(): Promise<Map<string, DescriptorInterface>> {
@@ -82,17 +81,13 @@ export class NobleCharacteristic extends EventEmitter implements CharacteristicI
     // await this.characteristic.notifyAsync(true);
   }
 
-  onRead(data: Buffer, isNotification: boolean) {
+  onRead(data: Buffer) {
     // if the read notification comes from a manual read, just ignore it
     // we are only interested in data pushed by the device
     if (!this.isReading) {
       this.lastValue = data;
       this.emit("dataRead", this.lastValue);
     }
-  }
-
-  onNotify(state: string) {
-    console.log(this.characteristic.toString(), state);
   }
 
   toJSON(asObject: boolean): string | Object {
