@@ -3,18 +3,23 @@
 import { Command } from "../api/Command";
 import { LockType, LockVersion } from "../constant/Lock";
 import { DeviceInterface, ServiceInterface } from "../scanner/DeviceInterface";
+import { sleep } from "../util/Timing";
 import { TTDevice } from "./TTDevice";
+
+const CRLF = "0d0a";
 
 export declare interface TTBluetoothDevice {
   on(event: "connected", listener: () => void): this;
   on(event: "disconnected", listener: () => void): this;
-  on(event: "response", listener: (command: Command) => void): this;
+  on(event: "dataReceived", listener: (command: Command) => void): this;
 }
 
 export class TTBluetoothDevice extends TTDevice implements TTBluetoothDevice {
   device?: DeviceInterface;
   connected: boolean = false;
   incomingDataBuffer: Buffer = Buffer.from([]);
+  private waitingForResponse: boolean = false;
+  private responses: Command[] = [];
 
   private constructor() {
     super();
@@ -87,9 +92,9 @@ export class TTBluetoothDevice extends TTDevice implements TTBluetoothDevice {
   }
 
   private async subscribe() {
-    let service = this.device?.services.get("1800");
+    let service = this.device?.services.get("1910");
     if (typeof service != "undefined") {
-      const characteristic = service.characteristics.get('fff4');
+      const characteristic = service.characteristics.get("fff4");
       if (typeof characteristic != "undefined") {
         characteristic.subscribe();
         characteristic.on("dataRead", this.onIncommingData.bind(this));
@@ -97,7 +102,55 @@ export class TTBluetoothDevice extends TTDevice implements TTBluetoothDevice {
     }
   }
 
+  async sendCommand(command: Command, waitForResponse: boolean = true): Promise<Command | void> {
+    if (this.waitingForResponse) {
+      throw new Error("Command already in progress");
+    }
+    if (this.responses.length > 0) {
+      // should this be an error ?
+      throw new Error("Unprocessed responses");
+    }
+    const commandData = command.buildCommand();
+    if (commandData) {
+      let data = Buffer.concat([
+        commandData,
+        Buffer.from(CRLF, "hex")
+      ]);
+      // write with 20 bytes MTU
+      const service = this.device?.services.get("1910");
+      if (typeof service != undefined) {
+        const characteristic = service?.characteristics.get("fff2");
+        if (typeof characteristic != "undefined") {
+          let index = 0;
+          if (waitForResponse) {
+            this.waitingForResponse = true;
+          }
+          do {
+            const remaining = data.length - index;
+            await characteristic?.write(data.subarray(index, index + Math.min(20, remaining)), true);
+            await sleep(50);
+          } while (index < data.length);
+        }
+        // wait for a response
+        if (waitForResponse) {
+          let cycles = 0;
+          while(this.responses.length == 0) {
+            cycles++;
+            await sleep(100);
+          }
+          console.log("Waited for a response for", cycles,"=",cycles * 100,"ms");
+          const response = this.responses.pop();
+          if (this.responses.length > 0) {
+            console.error("There are still unprocessed responses !!!");
+          }
+          return response;
+        }
+      }
+    }
+  }
+
   private onIncommingData(data: Buffer) {
+    console.log("Received data:", data.toString("hex"));
     this.incomingDataBuffer = Buffer.concat([this.incomingDataBuffer, data]);
     this.readDeviceResponse();
   }
@@ -106,11 +159,19 @@ export class TTBluetoothDevice extends TTDevice implements TTBluetoothDevice {
     if (this.incomingDataBuffer.length >= 2) {
       // check for CRLF at the end of data
       const ending = this.incomingDataBuffer.subarray(this.incomingDataBuffer.length - 2, this.incomingDataBuffer.length -1);
-      if (ending.toString("hex") == "0d0a") {
+      if (ending.toString("hex") == CRLF) {
         // we have a command response
         try {
-          const command = Command.createFromRawData(this.incomingDataBuffer);
-          this.emit("response", command);
+          try {
+            const command = Command.createFromRawData(this.incomingDataBuffer);
+            if (this.waitingForResponse) {
+              this.responses.push(command);
+            } else {
+              this.emit("dataReceived", command);
+            }
+          } catch (error) {
+            console.error(error);
+          }
         } catch (error) {
           console.error("Invalid response format", this.incomingDataBuffer.toString("hex"));
         }
@@ -237,4 +298,6 @@ export class TTBluetoothDevice extends TTDevice implements TTBluetoothDevice {
     macArr.reverse();
     this.address = macArr.join(':').toUpperCase();
   }
+
+
 }

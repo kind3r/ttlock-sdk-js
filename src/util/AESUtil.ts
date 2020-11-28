@@ -13,13 +13,13 @@ export const defaultAESKey = Buffer.from([
 ]);
 
 export class AESUtil {
-  static aesEncrypt(source: Buffer, key?: Buffer): Buffer | false {
+  static aesEncrypt(source: Buffer, key?: Buffer): Buffer {
     if(key) {} else {
       key = defaultAESKey; 
     }
 
     if (key.length != 16) {
-      return false;
+      throw new Error("Invalid key size");
     }
 
     const cipher = crypto.createCipheriv('aes-128-cbc', key, key);
@@ -30,13 +30,13 @@ export class AESUtil {
     return encrypted;
   }
 
-  static aesDecrypt(source: Buffer, key?: Buffer): Buffer | false {
+  static aesDecrypt(source: Buffer, key?: Buffer): Buffer {
     if(key) {} else {
       key = defaultAESKey; 
     }
 
     if (key.length != 16) {
-      return false;
+      throw new Error("Invalid key size");
     }
 
     const cipher = crypto.createDecipheriv('aes-128-cbc', key, key);
@@ -47,7 +47,8 @@ export class AESUtil {
   
       return decrypted;
     } catch (error) {
-      return false;
+      console.error(error);
+      throw new Error("Decryption failed");
     }
   }
 }

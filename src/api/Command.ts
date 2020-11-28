@@ -5,10 +5,11 @@ import { CodecUtils } from "../util/CodecUtils";
 import { LockType, LockVersion } from "../constant/Lock";
 import { AESUtil } from "../util/AESUtil";
 
+const DEFAULT_HEADER = Buffer.from([0x7F, 0x5A]);
+
 export class Command {
-  static defaultHeader: Buffer = Buffer.from([0x7F, 0x5A]);
   static APP_COMMAND: number = 0xaa;
-  private header: Buffer | null = null;
+  private header: Buffer = DEFAULT_HEADER;
   private protocol_type: number = -1;
   private sub_version: number = -1;
   private scene: number = -1;
@@ -16,7 +17,7 @@ export class Command {
   private sub_organization: number = -1;
   private command: CommandType = -1;
   private encrypt: number = 0;
-  private data: Buffer | null = null;
+  private data: Buffer = Buffer.from([]);
   private lockType: LockType = LockType.UNKNOWN;
   private aesKey?: Buffer;
 
@@ -76,7 +77,7 @@ export class Command {
    */
   static createFromLockVersion(lockVersion: LockVersion): Command {
     const command = new Command;
-    command.header = Command.defaultHeader;
+    command.header = DEFAULT_HEADER;
     command.protocol_type = lockVersion.getProtocolType();
     command.sub_version = lockVersion.getProtocolVersion();
     command.scene = lockVersion.getScene();
@@ -132,30 +133,52 @@ export class Command {
     this.lockType = lockType;
   }
 
+  getLockType(): LockType {
+    return this.lockType;
+  }
+
+  setCommand(command: CommandType) {
+    this.command = command;
+  }
+
   setData(data: Buffer): void {
     if (this.aesKey) {
-      const encryptedData = AESUtil.aesEncrypt(data, this.aesKey);
-      if (encryptedData != false) {
-        this.data = encryptedData;
-      }
+      this.data = AESUtil.aesEncrypt(data, this.aesKey);
     } else {
       this.data = CodecUtils.encodeWithEncrypt(data, this.encrypt);
     }
   }
 
-  getData(): Buffer | false {
-    if (this.data != null) {
-      if (this.aesKey) {
-        try {
-          return AESUtil.aesDecrypt(this.data, this.aesKey);
-        } catch (error) {
-          console.error(error);
-        }
-        return false;
-      } else {
-        return CodecUtils.decodeWithEncrypt(this.data, this.encrypt);
-      }
+  getData(): Buffer {
+    if (this.aesKey) {
+      return AESUtil.aesDecrypt(this.data, this.aesKey);
+    } else {
+      return CodecUtils.decodeWithEncrypt(this.data, this.encrypt);
     }
-    return false;
+  }
+
+  buildCommand(): Buffer {
+    const data = this.getData();
+    let command = Buffer.concat([
+      this.header,
+      Buffer.from([
+        this.protocol_type,
+        this.sub_version,
+        this.scene,
+        this.organization, // those are Int16BE
+        this.sub_organization,
+        this.command,
+        this.encrypt,
+        data.length
+      ]),
+    ]);
+
+    const crc = CodecUtils.crccompute(command);
+    command = Buffer.concat([
+      command,
+      Buffer.from([crc])
+    ]);
+
+    return command;
   }
 }

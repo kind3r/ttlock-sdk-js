@@ -49,7 +49,7 @@ export declare interface CharacteristicInterface extends EventEmitter {
   descriptors: Map<string, DescriptorInterface>;
   discoverDescriptors(): Promise<Map<string, DescriptorInterface>>;
   read(): Promise<Buffer | undefined>;
-  write(data: Buffer, notify: boolean): Promise<void>;
+  write(data: Buffer, withoutResponse: boolean): Promise<void>;
   notify(notify: boolean): Promise<void>;
   subscribe(): Promise<void>;
   toJSON(asObject: boolean): string | Object;

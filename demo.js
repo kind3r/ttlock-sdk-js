@@ -17,4 +17,11 @@ api.on("foundLock", async (device) => {
   // await device.disconnect();
   console.log(device.toJSON());
   console.log();
+
+  if (device.isSettingMode) {
+    console.log("Trying to init the lock");
+    device.initLock();
+
+    process.exit(0);
+  }
 });
