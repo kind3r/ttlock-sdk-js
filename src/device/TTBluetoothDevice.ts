@@ -134,11 +134,11 @@ export class TTBluetoothDevice extends TTDevice implements TTBluetoothDevice {
         // wait for a response
         if (waitForResponse) {
           let cycles = 0;
-          while(this.responses.length == 0) {
+          while (this.responses.length == 0) {
             cycles++;
             await sleep(100);
           }
-          console.log("Waited for a response for", cycles,"=",cycles * 100,"ms");
+          console.log("Waited for a response for", cycles, "=", cycles * 100, "ms");
           const response = this.responses.pop();
           if (this.responses.length > 0) {
             console.error("There are still unprocessed responses !!!");
@@ -152,6 +152,7 @@ export class TTBluetoothDevice extends TTDevice implements TTBluetoothDevice {
   private onIncommingData(data: Buffer) {
     console.log("Received data:", data.toString("hex"));
     this.incomingDataBuffer = Buffer.concat([this.incomingDataBuffer, data]);
+    console.log("Incoming data buffer:", this.incomingDataBuffer.toString("hex"));
     this.readDeviceResponse();
   }
 
@@ -162,18 +163,14 @@ export class TTBluetoothDevice extends TTDevice implements TTBluetoothDevice {
       if (ending.toString("hex") == CRLF) {
         // we have a command response
         try {
-          try {
-            const command = Command.createFromRawData(this.incomingDataBuffer);
-            if (this.waitingForResponse) {
-              this.responses.push(command);
-            } else {
-              this.emit("dataReceived", command);
-            }
-          } catch (error) {
-            console.error(error);
+          const command = Command.createFromRawData(this.incomingDataBuffer.subarray(0, this.incomingDataBuffer.length - 2));
+          if (this.waitingForResponse) {
+            this.responses.push(command);
+          } else {
+            this.emit("dataReceived", command);
           }
         } catch (error) {
-          console.error("Invalid response format", this.incomingDataBuffer.toString("hex"));
+          console.error(error);
         }
         this.incomingDataBuffer = Buffer.from([]);
       }

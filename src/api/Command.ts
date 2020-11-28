@@ -46,7 +46,11 @@ export class Command {
       if (length < 0 || rawData.length < 12 + length + 1) { // header + data + crc 
         throw new Error("Invalid data length");
       }
-      command.data = rawData.subarray(12, 12 + length + 1);
+      if (length > 0) {
+        command.data = rawData.subarray(12, 12 + length + 1);
+      } else {
+        command.data = Buffer.from([]);
+      }
     } else {
       command.command = rawData.readUInt8(3);
       command.encrypt = rawData.readInt8(4);
