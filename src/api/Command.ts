@@ -162,22 +162,22 @@ export class Command {
   }
 
   buildCommand(): Buffer {
+    const org = new Int16Array(2);
+    org[0] = this.organization;
+    org[1] = this.sub_organization;
     let command = Buffer.concat([
       this.header,
       Buffer.from([
         this.protocol_type,
         this.sub_version,
-        this.scene,
-        this.organization, // those are Int16BE
-        this.sub_organization,
+        this.scene
+      ]),
+      Buffer.from(org.buffer),
+      Buffer.from([
         this.command,
         this.encrypt,
         this.data.length
       ]),
-    ]);
-
-    command = Buffer.concat([
-      command,
       this.data
     ]);
 
