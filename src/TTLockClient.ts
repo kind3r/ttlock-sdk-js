@@ -15,7 +15,7 @@ export declare interface Settings {
 }
 
 export declare interface TTLockClient {
-  on(event: "foundDevice", listener: (lock: TTLock) => void): this;
+  on(event: "foundLock", listener: (lock: TTLock) => void): this;
 }
 
 export class TTLockClient extends events.EventEmitter implements TTLockClient {

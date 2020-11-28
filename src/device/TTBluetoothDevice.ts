@@ -46,6 +46,10 @@ export class TTBluetoothDevice extends TTDevice implements TTBluetoothDevice {
   async connect(): Promise<boolean> {
     if (this.device?.connectable) {
       if (await this.device?.connect()) {
+        await this.readBasicInfo();
+        await this.subscribe();
+        this.connected = true;
+        this.emit("connected");
         return true;
       }
     }
@@ -53,10 +57,10 @@ export class TTBluetoothDevice extends TTDevice implements TTBluetoothDevice {
   }
 
   private async onDeviceConnected() {
-    await this.readBasicInfo();
-    await this.subscribe();
-    this.connected = true;
-    this.emit("connected");
+    // await this.readBasicInfo();
+    // await this.subscribe();
+    // this.connected = true;
+    // this.emit("connected");
   }
 
   private async onDeviceDisconnected() {
