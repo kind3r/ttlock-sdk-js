@@ -1,7 +1,9 @@
 'use strict';
 
 import events from "events";
+import { LockType } from "./constant/Lock";
 import { TTBluetoothDevice } from "./device/TTBluetoothDevice";
+import { TTLock } from "./device/TTLock";
 
 import { BluetoothLeService, TTLockUUIDs, ScannerType } from "./scanner/BluetoothLeService";
 import { DeviceDatabase } from "./store/DeviceDatabase";
@@ -13,7 +15,7 @@ export declare interface Settings {
 }
 
 export declare interface TTLockClient {
-  on(event: "foundDevice", listener: (device: TTBluetoothDevice) => void): this;
+  on(event: "foundDevice", listener: (lock: TTLock) => void): this;
 }
 
 export class TTLockClient extends events.EventEmitter implements TTLockClient {
@@ -78,8 +80,13 @@ export class TTLockClient extends events.EventEmitter implements TTLockClient {
     // we can use a Map for this, and maybe nconf for persistent storage
     // do we need to store the ExtendedBluetoothDevice or something else
     // where do we store paired, AES keys etc ? - not here, after init of the lock
-    this.deviceDatabase.addOrUpdateDevice(device);
 
-    this.emit("foundDevice", device);
+    
+    // Is it a Lock device ?
+    if (device.lockType != LockType.UNKNOWN) {
+      const lock = new TTLock(device);
+      this.deviceDatabase.addOrUpdateDevice(lock);
+      this.emit("foundLock", lock);
+    }
   }
 }

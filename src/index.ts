@@ -1,5 +1,5 @@
 'use strict';
 
 export { TTLockClient } from "./TTLockClient";
-export { TTBluetoothDevice } from "./device/TTBluetoothDevice";
+export { TTLock } from "./device/TTLock";
 export { Command } from "./api/Command";

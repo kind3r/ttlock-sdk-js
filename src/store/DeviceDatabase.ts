@@ -1,14 +1,12 @@
 'use strict';
 
-import { BluetoothLeService } from "../scanner/BluetoothLeService";
-import { TTBluetoothDevice } from "../device/TTBluetoothDevice";
+import { TTLock } from "../device/TTLock";
 
 /**
  * Store data about devices (parmeters, keys etc)
  */
 export class DeviceDatabase {
-  private bleService: BluetoothLeService | null = null;
-  private devices: Map<string, TTBluetoothDevice> = new Map();
+  private locks: Map<string, TTLock> = new Map();
 
   constructor() {
 
@@ -21,8 +19,8 @@ export class DeviceDatabase {
     return true;
   }
 
-  addOrUpdateDevice(device: TTBluetoothDevice): boolean {
-
+  addOrUpdateDevice(lock: TTLock): boolean {
+    this.locks.set(lock.getId(), lock);
     return true;
   }
   /**

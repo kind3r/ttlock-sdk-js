@@ -11,9 +11,10 @@ const api = new TTLockClient({
 
 api.prepareBTService();
 api.startScanLock();
-api.on("foundDevice", async (device) => {
+api.on("foundLock", async (device) => {
   await device.connect();
-  await device.disconnect()
+  // don't disconnect so we receive subscriptions
+  // await device.disconnect();
   console.log(device.toJSON());
   console.log();
 });

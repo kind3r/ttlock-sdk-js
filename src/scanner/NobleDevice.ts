@@ -4,7 +4,7 @@ import { DeviceInterface, ServiceInterface, CharacteristicInterface, DescriptorI
 import { Peripheral, Service, Characteristic, Descriptor } from "@abandonware/noble";
 import { EventEmitter } from "events";
 
-export class NobleDevice implements DeviceInterface {
+export class NobleDevice extends EventEmitter implements DeviceInterface {
   id: string;
   uuid: string;
   name: string;
@@ -20,6 +20,7 @@ export class NobleDevice implements DeviceInterface {
   private peripheral: Peripheral;
 
   constructor(peripheral: Peripheral) {
+    super();
     this.peripheral = peripheral;
     this.id = peripheral.id;
     this.uuid = peripheral.uuid;
@@ -57,6 +58,7 @@ export class NobleDevice implements DeviceInterface {
     if (this.connectable && !this.connected) {
       await this.peripheral.connectAsync();
       this.connected = true;
+      this.emit("connected");
       return true;
     }
     return false;
@@ -68,6 +70,7 @@ export class NobleDevice implements DeviceInterface {
         await this.peripheral.disconnectAsync();
         this.connected = false;
         this.services = new Map();
+        this.emit("disconnected");
         return true;
       } catch (error) {
         console.error(error);
@@ -248,6 +251,7 @@ class NobleCharacteristic extends EventEmitter implements CharacteristicInterfac
   name?: string | undefined;
   type?: string | undefined;
   properties: string[];
+  isReading: boolean = false;
   lastValue?: Buffer;
   descriptors: Map<string, NobleDescriptor> = new Map();
   private device: NobleDevice;
@@ -261,10 +265,27 @@ class NobleCharacteristic extends EventEmitter implements CharacteristicInterfac
     this.name = characteristic.name;
     this.type = characteristic.type;
     this.properties = characteristic.properties;
+    this.characteristic.on("read", this.onRead.bind(this));
+    this.characteristic.on("notify", this.onNotify.bind(this));
   }
 
-  discoverDescriptors(): Promise<Map<string, DescriptorInterface>> {
-    throw new Error("Method not implemented.");
+  async discoverDescriptors(): Promise<Map<string, DescriptorInterface>> {
+    this.device.checkBusy();
+    if (!this.device.connected) {
+      this.device.resetBusy();
+      throw new Error("NobleDevice is not connected");
+    }
+    try {
+      const descriptors = await this.characteristic.discoverDescriptorsAsync();
+      this.descriptors = new Map();
+      descriptors.forEach((descriptor) => {
+        this.descriptors.set(descriptor.uuid, new NobleDescriptor(this.device, descriptor));
+      });
+    } catch (error) {
+      console.error(error);
+    }
+    this.device.resetBusy();
+    return this.descriptors;
   }
 
   async read(): Promise<Buffer | undefined> {
@@ -273,16 +294,18 @@ class NobleCharacteristic extends EventEmitter implements CharacteristicInterfac
       this.device.resetBusy();
       throw new Error("NobleDevice is not connected");
     }
+    this.isReading = true;
     try {
       this.lastValue = await this.characteristic.readAsync();
     } catch (error) {
       console.error(error);
     }
+    this.isReading = false;
     this.device.resetBusy();
     return this.lastValue;
   }
 
-  write(data: Buffer, notify: boolean): Promise<void> {
+  async write(data: Buffer, notify: boolean): Promise<void> {
     this.device.checkBusy();
     if (!this.device.connected) {
       this.device.resetBusy();
@@ -299,6 +322,19 @@ class NobleCharacteristic extends EventEmitter implements CharacteristicInterfac
 
   subscribe(): Promise<void> {
     throw new Error("Method not implemented.");
+  }
+
+  onRead(data: Buffer, isNotification: boolean) {
+    // if the read notification comes from a manual read, just ignore it
+    // we are only interested in data pushed by the device
+    if (!this.isReading) {
+      this.lastValue = data;
+      this.emit("dataRead", this.lastValue);
+    }
+  }
+
+  onNotify(state: string) {
+    console.log(this.characteristic.toString(), state);
   }
 
   toJSON(asObject: boolean): string | Object {
@@ -342,18 +378,22 @@ class NobleDescriptor implements DescriptorInterface {
     this.type = descriptor.type;
   }
 
-  readValue(): Promise<Buffer> {
+  async readValue(): Promise<Buffer | undefined> {
     this.device.checkBusy();
     if (!this.device.connected) {
       this.device.resetBusy();
       throw new Error("NobleDevice is not connected");
     }
-
+    try {
+      this.lastValue = await this.descriptor.readValueAsync();
+    } catch (error) {
+      console.error(error);
+    }
     this.device.resetBusy();
-    throw new Error("Method not implemented.");
+    return this.lastValue;
   }
 
-  writeValue(data: Buffer): Promise<void> {
+  async writeValue(data: Buffer): Promise<void> {
     this.device.checkBusy();
     if (!this.device.connected) {
       this.device.resetBusy();

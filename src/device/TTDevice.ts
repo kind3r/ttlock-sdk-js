@@ -1,8 +1,9 @@
 'use strict';
 
+import { EventEmitter } from "events";
 import { LockType } from "../constant/Lock";
 
-export class TTDevice {
+export class TTDevice extends EventEmitter {
   id: string = "";
   uuid: string = "";
   name: string = "";
@@ -48,9 +49,7 @@ export class TTDevice {
   disconnectStatus: number = 0;
   parkStatus: number = 0;
 
-  aesKey: Buffer = Buffer.from([]);
-
-  toJSON() {
+  toJSON(asObject:boolean = false): string | Object {
     const temp = new TTDevice();
     var json = {};
     
@@ -67,6 +66,10 @@ export class TTDevice {
       }
     });
 
-    return JSON.stringify(json);
+    if (asObject) {
+      return json;
+    } else {
+      return JSON.stringify(json);
+    }
   }
 }

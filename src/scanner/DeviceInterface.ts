@@ -2,7 +2,7 @@
 
 import { EventEmitter } from "events";
 
-export declare interface DeviceInterface {
+export declare interface DeviceInterface extends EventEmitter {
   id: string;
   uuid: string;
   name: string;
@@ -22,6 +22,9 @@ export declare interface DeviceInterface {
   readCharacteristics(): Promise<boolean>;
   toJSON(asObject: boolean): string | Object;
   toString(): string;
+
+  on(event: "connected", listener: () => void): this;
+  on(event: "disconnected", listener: () => void): this;
 }
 
 export declare interface ServiceInterface {
@@ -41,6 +44,7 @@ export declare interface CharacteristicInterface extends EventEmitter {
   name?: string;
   type?: string;
   properties: string[];
+  isReading: boolean;
   lastValue?: Buffer;
   descriptors: Map<string, DescriptorInterface>;
   discoverDescriptors(): Promise<Map<string, DescriptorInterface>>;
@@ -51,8 +55,7 @@ export declare interface CharacteristicInterface extends EventEmitter {
   toJSON(asObject: boolean): string | Object;
   toString(): string;
   
-  on(event: "broadcast", listener: (state: string) => void): this;
-  on(event: "notify", listener: (state: string) => void): this;
+  on(event: "dataRead", listener: (data: Buffer) => void): this;
 }
 
 export declare interface DescriptorInterface {
@@ -60,7 +63,7 @@ export declare interface DescriptorInterface {
   name?: string;
   type?: string;
   lastValue?: Buffer;
-  readValue(): Promise<Buffer>;
+  readValue(): Promise<Buffer | undefined>;
   writeValue(data: Buffer): Promise<void>;
   toJSON(asObject: boolean): string | Object;
   toString(): string;

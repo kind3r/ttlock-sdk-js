@@ -18,12 +18,13 @@ export class Command {
   private encrypt: number = 0;
   private data: Buffer | null = null;
   private lockType: LockType = LockType.UNKNOWN;
+  private aesKey?: Buffer;
 
   /**
    * Create a command from raw data usually received from characteristic change
    * @param rawData 
    */
-  static createFromRawData(rawData: Buffer): Command {
+  static createFromRawData(rawData: Buffer, aesKey?: Buffer): Command {
     const command = new Command();
     if (rawData.length < 7) {
       throw new Error("Data too short");
@@ -61,6 +62,10 @@ export class Command {
       throw new Error("CRC error");
     }
     command.generateLockType();
+
+    if (typeof aesKey != "undefined") {
+      command.aesKey = aesKey;
+    }
 
     return command;
   }
@@ -119,13 +124,17 @@ export class Command {
       this.setLockType(LockType.LOCK_TYPE_V2);
   }
 
+  setAesKey(aesKey: Buffer) {
+    this.aesKey = aesKey;
+  }
+
   setLockType(lockType: LockType) {
     this.lockType = lockType;
   }
 
-  setData(data: Buffer, key?: Buffer): void {
-    if (key) {
-      const encryptedData = AESUtil.aesEncrypt(data, key);
+  setData(data: Buffer): void {
+    if (this.aesKey) {
+      const encryptedData = AESUtil.aesEncrypt(data, this.aesKey);
       if (encryptedData != false) {
         this.data = encryptedData;
       }
@@ -134,10 +143,15 @@ export class Command {
     }
   }
 
-  getData(key?: Buffer): Buffer | false {
+  getData(): Buffer | false {
     if (this.data != null) {
-      if (key) {
-        return AESUtil.aesDecrypt(this.data, key);
+      if (this.aesKey) {
+        try {
+          return AESUtil.aesDecrypt(this.data, this.aesKey);
+        } catch (error) {
+          console.error(error);
+        }
+        return false;
       } else {
         return CodecUtils.decodeWithEncrypt(this.data, this.encrypt);
       }
