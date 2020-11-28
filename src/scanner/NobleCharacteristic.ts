@@ -76,12 +76,9 @@ export class NobleCharacteristic extends EventEmitter implements CharacteristicI
     throw new Error("Method not implemented.");
   }
 
-  notify(notify: boolean): Promise<void> {
-    throw new Error("Method not implemented.");
-  }
-
-  subscribe(): Promise<void> {
-    throw new Error("Method not implemented.");
+  async subscribe(): Promise<void> {
+    await this.characteristic.subscribeAsync();
+    await this.characteristic.notifyAsync(true);
   }
 
   onRead(data: Buffer, isNotification: boolean) {
