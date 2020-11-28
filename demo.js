@@ -18,7 +18,7 @@ api.on("foundLock", async (device) => {
   console.log(device.toJSON());
   console.log();
 
-  if (device.isSettingMode) {
+  if (device.initialized) {
     console.log("Trying to init the lock");
     device.initLock();
 
