@@ -129,7 +129,7 @@ export class TTBluetoothDevice extends TTDevice implements TTBluetoothDevice {
           console.log("Sending command:", data.toString("hex"));
           do {
             const remaining = data.length - index;
-            await characteristic?.write(data.subarray(index, index + Math.min(MTU, remaining) + 1), true);
+            await characteristic?.write(data.subarray(index, index + Math.min(MTU, remaining)), true);
             await sleep(50);
             index += MTU;
           } while (index < data.length);

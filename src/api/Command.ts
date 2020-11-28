@@ -47,7 +47,7 @@ export class Command {
         throw new Error("Invalid data length");
       }
       if (length > 0) {
-        command.data = rawData.subarray(12, 12 + length + 1);
+        command.data = rawData.subarray(12, 12 + length);
       } else {
         command.data = Buffer.from([]);
       }
@@ -58,13 +58,13 @@ export class Command {
       if (length < 0 || rawData.length < 6 + length + 1) {
         throw new Error("Invalid data length");
       }
-      command.data = rawData.subarray(6, 6 + length + 1);
+      command.data = rawData.subarray(6, 6 + length);
     }
     // const crc = CodecUtils.crccompute(rawData.slice(0, rawData.length - 1));
     // console.log(rawData.readUInt8(rawData.length - 1), crc);
     // check CRC
     if (rawData.readUInt8(rawData.length - 1) != CodecUtils.crccompute(rawData.slice(0, rawData.length - 1))) {
-      throw new Error("CRC error");
+      throw new Error("CRC error (" + rawData.readUInt8(rawData.length - 1) + " != " + CodecUtils.crccompute(rawData.slice(0, rawData.length - 1)) + ")");
     }
     command.generateLockType();
 

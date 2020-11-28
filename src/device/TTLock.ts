@@ -51,8 +51,8 @@ export class TTLock {
     const getAesKeyResponse = await this.device.sendCommand(getAesKeyCommand);
     if (getAesKeyResponse) {
       getAesKeyResponse.setAesKey(this.aesKey);
-      console.log("Received getAESKey response:", getAesKeyResponse, getAesKeyResponse.getData().toString());
-
+      console.log("Received getAESKey response:", getAesKeyResponse);
+      console.log("Command data:", getAesKeyResponse.getData().toString());
     }
 
     return true;
