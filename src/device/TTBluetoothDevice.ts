@@ -127,7 +127,7 @@ export class TTBluetoothDevice extends TTDevice implements TTBluetoothDevice {
           }
           do {
             const remaining = data.length - index;
-            await characteristic?.write(data.subarray(index, index + Math.min(20, remaining)), true);
+            await characteristic?.write(data.subarray(index, index + Math.min(20, remaining) + 1), true);
             await sleep(50);
           } while (index < data.length);
         }
@@ -158,7 +158,7 @@ export class TTBluetoothDevice extends TTDevice implements TTBluetoothDevice {
   private readDeviceResponse() {
     if (this.incomingDataBuffer.length >= 2) {
       // check for CRLF at the end of data
-      const ending = this.incomingDataBuffer.subarray(this.incomingDataBuffer.length - 2, this.incomingDataBuffer.length -1);
+      const ending = this.incomingDataBuffer.subarray(this.incomingDataBuffer.length - 2);
       if (ending.toString("hex") == CRLF) {
         // we have a command response
         try {

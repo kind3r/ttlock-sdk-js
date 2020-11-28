@@ -30,7 +30,7 @@ export class Command {
     if (rawData.length < 7) {
       throw new Error("Data too short");
     }
-    command.header = rawData.subarray(0, 1);
+    command.header = rawData.subarray(0, 2);
     command.protocol_type = rawData.readInt8(2);
     if (command.protocol_type >= 5) { //New agreement 
       if (rawData.length < 13) {
@@ -46,7 +46,7 @@ export class Command {
       if (length < 0 || rawData.length < 12 + length + 1) { // header + data + crc 
         throw new Error("Invalid data length");
       }
-      command.data = rawData.subarray(12, 12 + length);
+      command.data = rawData.subarray(12, 12 + length + 1);
     } else {
       command.command = rawData.readUInt8(3);
       command.encrypt = rawData.readInt8(4);
@@ -54,7 +54,7 @@ export class Command {
       if (length < 0 || rawData.length < 6 + length + 1) {
         throw new Error("Invalid data length");
       }
-      command.data = rawData.subarray(6, 6 + length);
+      command.data = rawData.subarray(6, 6 + length + 1);
     }
     // const crc = CodecUtils.crccompute(rawData.slice(0, rawData.length - 1));
     // console.log(rawData.readUInt8(rawData.length - 1), crc);
