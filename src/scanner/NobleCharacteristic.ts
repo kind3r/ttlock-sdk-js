@@ -75,7 +75,6 @@ export class NobleCharacteristic extends EventEmitter implements CharacteristicI
     await this.characteristic.writeAsync(data, withoutResponse);
 
     this.device.resetBusy();
-    throw new Error("Method not implemented.");
   }
 
   async subscribe(): Promise<void> {
