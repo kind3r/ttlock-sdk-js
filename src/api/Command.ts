@@ -162,7 +162,6 @@ export class Command {
   }
 
   buildCommand(): Buffer {
-    const data = this.getData();
     let command = Buffer.concat([
       this.header,
       Buffer.from([
@@ -173,13 +172,13 @@ export class Command {
         this.sub_organization,
         this.command,
         this.encrypt,
-        data.length
+        this.data.length
       ]),
     ]);
 
     command = Buffer.concat([
       command,
-      data
+      this.data
     ]);
 
     const crc = CodecUtils.crccompute(command);

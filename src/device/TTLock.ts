@@ -8,10 +8,9 @@ import { TTBluetoothDevice } from "./TTBluetoothDevice";
 export class TTLock {
   initialized: boolean = false;
   private device: TTBluetoothDevice;
-  private aesKey: Buffer = Buffer.from([]);
+  private aesKey: Buffer = defaultAESKey;
 
   constructor(device: TTBluetoothDevice) {
-    this.aesKey = defaultAESKey;
     this.device = device;
     this.initialized = !device.isSettingMode;
     this.device.on("dataReceived", this.onDataReceived.bind(this));
