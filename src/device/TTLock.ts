@@ -59,7 +59,7 @@ export class TTLock {
         const command = cmd as GetAESKeyCommand;
         const aesKey = command.getAESKey();
         if (aesKey) {
-          console.log("Got AES key", aesKey.toString("hex");
+          console.log("Got AES key", aesKey.toString("hex"));
           this.aesKey = aesKey;
           // TODO: continue the initialisation flow
         } else {
