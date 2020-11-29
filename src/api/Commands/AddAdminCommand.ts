@@ -4,7 +4,7 @@ import { CommandResponse } from "../../constant/CommandResponse";
 import { CommandType } from "../../constant/CommandType";
 import { Command } from "../Command";
 
-export class AddAdmin extends Command {
+export class AddAdminCommand extends Command {
   static COMMAND_TYPE: CommandType = CommandType.COMM_ADD_ADMIN;
   private adminPassword?: number;
   private unlockNumber?: number;

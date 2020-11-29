@@ -3,7 +3,7 @@
 import { CommandEnvelope } from "../api/CommandEnvelope";
 import { LockType, LockVersion } from "../constant/Lock";
 import { DeviceInterface, ServiceInterface } from "../scanner/DeviceInterface";
-import { sleep } from "../util/Timing";
+import { sleep } from "../util/timingUtil";
 import { TTDevice } from "./TTDevice";
 
 const CRLF = "0d0a";

@@ -90,9 +90,19 @@ TTLockClient.getDefault().stopBTService();
                 - huge function to process all possible command responses
                 - `new Command(values)`, check CRC
                 - `data = command.getData(aesKeyArray)` - for lock init, the CommandUtil::defaultAesKeyArray is used
-                - assume `Command.COMM_GET_AES_KEY`
+                - response is `Command.COMM_GET_AES_KEY`
                 - check data[1] == CommandResponse.SUCCESS
                 - `CommandUtil::V_addAdmin` with random `adminPs` and `unlockKey` (10 digit numbers, first digit always 0, so basically 9 digits)
+                - response is `Command.COMM_RESPONSE`
+                - command is `Command.COMM_ADD_ADMIN`
+                - check if data == `SCIENER`
+                - `CommandUtil.C_calibationTime` with time in ms and timezone
+                - `BluetoothImpl::initLock`
+                  - `CommandUtil.searchDeviceFeature`
+                  - `BluetoothImpl::genCommandQue` Depending on the features, extra commands are ran agains the lock
+                  - extra commands
+                  - last command seems to set some random passwords `CommandUtil_V3::initPasswords`. After that `CommandUtil_V3::controlRemoteUnlock` and then `CommandUtil::operateFinished`
+                  - a last check is being run `CommandUtil.readDeviceInfo` which starts another chain of commands to get more information about the device ending with finally calling `onInitLockSuccess`
 ```java
 TTLockClient.getDefault().initLock(device, new InitLockCallback() {
     @Override

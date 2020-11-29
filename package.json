@@ -29,6 +29,7 @@
   },
   "dependencies": {
     "@abandonware/noble": "^1.9.2-10",
+    "moment": "^2.29.1",
     "node-ble": "^1.2.0"
   }
 }

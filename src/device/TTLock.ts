@@ -2,11 +2,18 @@
 
 import { commandFromData } from "../api/commandBuilder";
 import { CommandEnvelope } from "../api/CommandEnvelope";
-import { AddAdmin, AESKeyCommand } from "../api/Commands";
+import { AddAdminCommand, AESKeyCommand } from "../api/Commands";
+import { DeviceFeaturesCommand } from "../api/Commands/DeviceFeaturesCommand";
 import { CommandResponse } from "../constant/CommandResponse";
 import { CommandType } from "../constant/CommandType";
+import { FeatureValue } from "../constant/FeatureValue";
 import { defaultAESKey } from "../util/AESUtil";
 import { TTBluetoothDevice } from "./TTBluetoothDevice";
+
+interface AdminInterface {
+  adminPassword: number;
+  unlockNumber: number;
+}
 
 export class TTLock {
   initialized: boolean = false;
@@ -14,6 +21,7 @@ export class TTLock {
   private aesKey: Buffer = defaultAESKey;
   private adminPassword?: number;
   private unlockNumber?: number;
+  private featureList?: Set<FeatureValue>;
 
   constructor(device: TTBluetoothDevice) {
     this.device = device;
@@ -47,44 +55,23 @@ export class TTLock {
     }
 
     // TODO: also check if lock is already inited (has AES key)
+    
+    try {
+      // Get AES key
+      const aesKey = await this.getAESKeyCommand();
+      const featureList = await this.searchDeviceFeatureCommand(aesKey);
+      throw new Error("Init is paused at this stage for safety reasons");
+      // // Add admin
+      // const admin = await this.addAdminCommand(aesKey);
+      // // Calibrate time
+      // await this.calibrateTimeCommand(aesKey);
+      // // Search device features
+      // const featureList = await this.searchDeviceFeatureCommand(aesKey);
+      // // TODO: implement feature dependet extra queries
 
-    const getAesKeyEnvelope = CommandEnvelope.createFromLockType(this.device.lockType, this.aesKey);
-    getAesKeyEnvelope.setCommandType(CommandType.COMM_GET_AES_KEY);
-    console.log("Sent getAESKey command:", getAesKeyEnvelope, getAesKeyEnvelope.buildCommandBuffer().toString("hex"));
-    const getAesKeyResponseEnvelope = await this.device.sendCommand(getAesKeyEnvelope);
-    if (getAesKeyResponseEnvelope) {
-      getAesKeyResponseEnvelope.setAesKey(this.aesKey);
-      console.log("Received getAESKey response:", getAesKeyResponseEnvelope);
-      let cmd = getAesKeyResponseEnvelope.getCommand();
-      if (cmd.getResponse() != CommandResponse.SUCCESS) {
-        throw new Error("Failed getting AES key from lock");
-      }
-      if (cmd instanceof AESKeyCommand) {
-        const command = cmd as AESKeyCommand;
-        const aesKey = command.getAESKey();
-        if (aesKey) {
-          this.aesKey = aesKey;
-          console.log("Got AES key", aesKey.toString("hex"));
-          const addAdminCommandEnvelope = CommandEnvelope.createFromLockType(this.device.lockType, this.aesKey);
-          addAdminCommandEnvelope.setCommandType(CommandType.COMM_ADD_ADMIN);
-          const addAdminCommand = addAdminCommandEnvelope.getCommand() as AddAdmin;
-          this.adminPassword = addAdminCommand.setAdminPassword();
-          this.unlockNumber = addAdminCommand.setUnlockNumber();
-          console.log("Setting adminPassword", this.adminPassword, "and unlockNumber", this.unlockNumber);
-          return false; // disable sending this for the moment
-          const addAdminResponseEnvelope = await this.device.sendCommand(addAdminCommandEnvelope);
-          if (cmd.getResponse() != CommandResponse.SUCCESS) {
-            throw new Error("Failed setting admin");
-          }
-
-        } else {
-          console.error("No AES key received");
-        }
-      } else {
-        // bad response ...
-        console.log("Gor response class", cmd);
-        return false;
-      }
+    } catch (error) {
+      console.error("Error while initialising lock", error);
+      return false;
     }
 
     return true;
@@ -92,6 +79,108 @@ export class TTLock {
 
   isConnected(): boolean {
     return this.device.connected;
+  }
+
+  /**
+   * Send AESKeyCommand
+   */
+  private async getAESKeyCommand(): Promise<Buffer> {
+    const requestEnvelope = CommandEnvelope.createFromLockType(this.device.lockType, defaultAESKey);
+    requestEnvelope.setCommandType(CommandType.COMM_GET_AES_KEY);
+    console.log("Sent getAESKey command:", requestEnvelope, requestEnvelope.buildCommandBuffer().toString("hex"));
+    const responseEnvelope = await this.device.sendCommand(requestEnvelope);
+    if (responseEnvelope) {
+      responseEnvelope.setAesKey(this.aesKey);
+      console.log("Received getAESKey response:", responseEnvelope);
+      let cmd = responseEnvelope.getCommand();
+      if (cmd.getResponse() != CommandResponse.SUCCESS) {
+        throw new Error("Failed getting AES key from lock");
+      }
+      if (cmd instanceof AESKeyCommand) {
+        const command = cmd as AESKeyCommand;
+        const aesKey = command.getAESKey();
+        if (aesKey) {
+          // this.aesKey = aesKey;
+          console.log("Got AES key", aesKey.toString("hex"));
+          return aesKey;
+        } else {
+          throw new Error("Unable to getAESKey");
+        }
+      } else {
+        throw new Error("Invalid response to getAESKey");
+      }
+    } else {
+      throw new Error("No response to getAESKey");
+    }
+  }
+
+  /**
+   * Send AddAdmin command
+   */
+  private async addAdminCommand(aesKey?: Buffer): Promise<AdminInterface> {
+    if (typeof aesKey == "undefined") {
+      aesKey = this.aesKey;
+    }
+    const requestEnvelope = CommandEnvelope.createFromLockType(this.device.lockType, aesKey);
+    requestEnvelope.setCommandType(CommandType.COMM_ADD_ADMIN);
+    const addAdminCommand = requestEnvelope.getCommand() as AddAdminCommand;
+    const admin: AdminInterface = {
+      adminPassword: addAdminCommand.setAdminPassword(),
+      unlockNumber: addAdminCommand.setUnlockNumber(),
+    }
+    console.log("Setting adminPassword", admin.adminPassword, "and unlockNumber", admin.unlockNumber);
+    const responseEnvelope = await this.device.sendCommand(requestEnvelope);
+    if (responseEnvelope) {
+      const cmd = responseEnvelope.getCommand();
+      if (cmd.getResponse() != CommandResponse.SUCCESS) {
+        throw new Error("Failed AddAdmin");
+      }
+      return admin;
+    } else {
+      throw new Error("No response to AddAdmin");
+    }
+  }
+
+  /**
+   * Send CalibrationTime command
+   */
+  private async calibrateTimeCommand(aesKey?: Buffer): Promise<void> {
+    if (typeof aesKey == "undefined") {
+      aesKey = this.aesKey;
+    }
+    const requestEnvelope = CommandEnvelope.createFromLockType(this.device.lockType, aesKey);
+    requestEnvelope.setCommandType(CommandType.COMM_TIME_CALIBRATE);
+    const responseEnvelope = await this.device.sendCommand(requestEnvelope);
+    if (responseEnvelope) {
+      const cmd = responseEnvelope.getCommand();
+      if (cmd.getResponse() != CommandResponse.SUCCESS) {
+        throw new Error("Failed setting lock time");
+      }
+    } else {
+      throw new Error("No response to time calibration");
+    }
+  }
+
+  /**
+   * Send SearchDeviceFeature command
+   */
+  private async searchDeviceFeatureCommand(aesKey?: Buffer): Promise<Set<FeatureValue>> {
+    if (typeof aesKey == "undefined") {
+      aesKey = this.aesKey;
+    }
+    const requestEnvelope = CommandEnvelope.createFromLockType(this.device.lockType, aesKey);
+    requestEnvelope.setCommandType(CommandType.COMM_SEARCHE_DEVICE_FEATURE);
+    const responseEnvelope = await this.device.sendCommand(requestEnvelope);
+    if (responseEnvelope) {
+      const cmd = responseEnvelope.getCommand();
+      if (cmd.getResponse() != CommandResponse.SUCCESS) {
+        throw new Error("Failed to search device features");
+      }
+      const command = cmd as DeviceFeaturesCommand;
+      return command.getFeaturesList();
+    } else {
+      throw new Error("No response to search device features");
+    }
   }
 
   private onDataReceived(command: CommandEnvelope) {
