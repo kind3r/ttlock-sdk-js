@@ -138,7 +138,7 @@ export class CommandEnvelope {
 
   setAesKey(aesKey: Buffer) {
     this.aesKey = aesKey;
-    this.generateCommand;
+    this.generateCommand();
   }
 
   setLockType(lockType: LockType) {
