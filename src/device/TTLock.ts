@@ -54,13 +54,12 @@ export class TTLock {
     if (getAesKeyResponse) {
       getAesKeyResponse.setAesKey(this.aesKey);
       console.log("Received getAESKey response:", getAesKeyResponse);
-      const command = commandBuilder(getAesKeyResponse.getData()) as GetAESKeyCommand;
-      if (command instanceof GetAESKeyCommand) {
-        console.log("Command is GetAESKeyCommand");
-      }
-      if (command.className == "GetAESKeyCommand") {
+      const cmd = commandBuilder(getAesKeyResponse.getData());
+      if (cmd instanceof GetAESKeyCommand) {
+        const command = cmd as GetAESKeyCommand;
         const aesKey = command.getAESKey();
         if (aesKey) {
+          console.log("Got AES key", aesKey.toString("hex");
           this.aesKey = aesKey;
           // TODO: continue the initialisation flow
         } else {
@@ -68,7 +67,7 @@ export class TTLock {
         }
       } else {
         // bad response ...
-        console.log("Gor response class", command.className, command);
+        console.log("Gor response class", cmd);
         return false;
       }
     }

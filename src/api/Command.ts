@@ -9,7 +9,6 @@ export interface CommandInterface {
 }
 
 export abstract class Command {
-  abstract className: string;
   protected commandResponse?: CommandResponse;
   protected commandData?: Buffer;
 

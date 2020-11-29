@@ -3,7 +3,6 @@
 import { Command } from "../Command";
 
 export class UnknownCommand extends Command {
-  className: string = this.constructor.name
   
   processData(): void {
     if (this.commandData) {

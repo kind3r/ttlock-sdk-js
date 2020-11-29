@@ -5,7 +5,6 @@ import { Command } from "../Command";
 
 export class GetAESKeyCommand extends Command {
   static COMMAND_TYPE: CommandType = CommandType.COMM_GET_AES_KEY;
-  className = this.constructor.name;
 
   private aesKey?: Buffer;
 
