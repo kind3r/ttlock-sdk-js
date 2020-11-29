@@ -1,6 +1,8 @@
 'use strict';
 
-import { Command } from "../api/Command";
+import { commandBuilder } from "../api/commandBuilder";
+import { CommandEnvelope } from "../api/CommandEnvelope";
+import { GetAESKeyCommand } from "../api/Commands";
 import { CommandType } from "../constant/CommandType";
 import { defaultAESKey } from "../util/AESUtil";
 import { TTBluetoothDevice } from "./TTBluetoothDevice";
@@ -43,7 +45,7 @@ export class TTLock {
 
     // TODO: also check if lock is already inited (has AES key)
 
-    const getAesKeyCommand = Command.createFromLockType(this.device.lockType);
+    const getAesKeyCommand = CommandEnvelope.createFromLockType(this.device.lockType);
     getAesKeyCommand.setCommand(CommandType.COMM_GET_AES_KEY);
     getAesKeyCommand.setAesKey(this.aesKey);
     getAesKeyCommand.setData(Buffer.from("SCIENER"));
@@ -52,7 +54,23 @@ export class TTLock {
     if (getAesKeyResponse) {
       getAesKeyResponse.setAesKey(this.aesKey);
       console.log("Received getAESKey response:", getAesKeyResponse);
-      console.log("Command data:", getAesKeyResponse.getData().toString());
+      const command = commandBuilder(getAesKeyResponse.getData()) as GetAESKeyCommand;
+      if (command instanceof GetAESKeyCommand) {
+        console.log("Command is GetAESKeyCommand");
+      }
+      if (command.className == "GetAESKeyCommand") {
+        const aesKey = command.getAESKey();
+        if (aesKey) {
+          this.aesKey = aesKey;
+          // TODO: continue the initialisation flow
+        } else {
+          console.error("No AES key received");
+        }
+      } else {
+        // bad response ...
+        console.log("Gor response class", command.className, command);
+        return false;
+      }
     }
 
     return true;
@@ -62,7 +80,7 @@ export class TTLock {
     return this.device.connected;
   }
 
-  private onDataReceived(command: Command) {
+  private onDataReceived(command: CommandEnvelope) {
     // is this just a notification (like the lock was locked/unlocked etc.)
     command.setAesKey(this.aesKey);
     console.log("Received:", command);

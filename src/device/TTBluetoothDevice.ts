@@ -1,6 +1,6 @@
 'use strict';
 
-import { Command } from "../api/Command";
+import { CommandEnvelope } from "../api/CommandEnvelope";
 import { LockType, LockVersion } from "../constant/Lock";
 import { DeviceInterface, ServiceInterface } from "../scanner/DeviceInterface";
 import { sleep } from "../util/Timing";
@@ -12,7 +12,7 @@ const MTU = 20;
 export declare interface TTBluetoothDevice {
   on(event: "connected", listener: () => void): this;
   on(event: "disconnected", listener: () => void): this;
-  on(event: "dataReceived", listener: (command: Command) => void): this;
+  on(event: "dataReceived", listener: (command: CommandEnvelope) => void): this;
 }
 
 export class TTBluetoothDevice extends TTDevice implements TTBluetoothDevice {
@@ -20,7 +20,7 @@ export class TTBluetoothDevice extends TTDevice implements TTBluetoothDevice {
   connected: boolean = false;
   incomingDataBuffer: Buffer = Buffer.from([]);
   private waitingForResponse: boolean = false;
-  private responses: Command[] = [];
+  private responses: CommandEnvelope[] = [];
 
   private constructor() {
     super();
@@ -103,7 +103,7 @@ export class TTBluetoothDevice extends TTDevice implements TTBluetoothDevice {
     }
   }
 
-  async sendCommand(command: Command, waitForResponse: boolean = true): Promise<Command | void> {
+  async sendCommand(command: CommandEnvelope, waitForResponse: boolean = true): Promise<CommandEnvelope | void> {
     if (this.waitingForResponse) {
       throw new Error("Command already in progress");
     }
@@ -167,7 +167,7 @@ export class TTBluetoothDevice extends TTDevice implements TTBluetoothDevice {
       if (ending.toString("hex") == CRLF) {
         // we have a command response
         try {
-          const command = Command.createFromRawData(this.incomingDataBuffer.subarray(0, this.incomingDataBuffer.length - 2));
+          const command = CommandEnvelope.createFromRawData(this.incomingDataBuffer.subarray(0, this.incomingDataBuffer.length - 2));
           if (this.waitingForResponse) {
             this.responses.push(command);
           } else {

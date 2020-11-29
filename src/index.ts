@@ -2,4 +2,5 @@
 
 export { TTLockClient } from "./TTLockClient";
 export { TTLock } from "./device/TTLock";
-export { Command } from "./api/Command";
+// export { CommandEnvelope } from "./api/CommandEnvelope";
+export { commandBuilder } from "./api/commandBuilder";
