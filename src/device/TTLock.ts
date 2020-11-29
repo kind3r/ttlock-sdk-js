@@ -131,6 +131,7 @@ export class TTLock {
     console.log("Setting adminPassword", admin.adminPassword, "and unlockNumber", admin.unlockNumber);
     const responseEnvelope = await this.device.sendCommand(requestEnvelope);
     if (responseEnvelope) {
+      responseEnvelope.setAesKey(aesKey);
       const cmd = responseEnvelope.getCommand();
       if (cmd.getResponse() != CommandResponse.SUCCESS) {
         throw new Error("Failed AddAdmin");
@@ -152,6 +153,7 @@ export class TTLock {
     requestEnvelope.setCommandType(CommandType.COMM_TIME_CALIBRATE);
     const responseEnvelope = await this.device.sendCommand(requestEnvelope);
     if (responseEnvelope) {
+      responseEnvelope.setAesKey(aesKey);
       const cmd = responseEnvelope.getCommand();
       if (cmd.getResponse() != CommandResponse.SUCCESS) {
         throw new Error("Failed setting lock time");
@@ -172,6 +174,7 @@ export class TTLock {
     requestEnvelope.setCommandType(CommandType.COMM_SEARCHE_DEVICE_FEATURE);
     const responseEnvelope = await this.device.sendCommand(requestEnvelope);
     if (responseEnvelope) {
+      responseEnvelope.setAesKey(aesKey);
       const cmd = responseEnvelope.getCommand();
       if (cmd.getResponse() != CommandResponse.SUCCESS) {
         throw new Error("Failed to search device features");
