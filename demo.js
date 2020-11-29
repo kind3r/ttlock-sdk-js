@@ -8,7 +8,7 @@ const api = new TTLockClient({
   // scannerType: "noble"
 });
 
-
+console.log("Starting scan...");
 api.prepareBTService();
 api.startScanLock();
 api.on("foundLock", async (device) => {

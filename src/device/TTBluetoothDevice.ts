@@ -142,6 +142,7 @@ export class TTBluetoothDevice extends TTDevice implements TTBluetoothDevice {
             cycles++;
             await sleep(100);
           }
+          this.waitingForResponse = false;
           console.log("Waited for a response for", cycles, "=", cycles * 100, "ms");
           const response = this.responses.pop();
           if (this.responses.length > 0) {
