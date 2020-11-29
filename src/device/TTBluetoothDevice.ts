@@ -111,7 +111,7 @@ export class TTBluetoothDevice extends TTDevice implements TTBluetoothDevice {
       // should this be an error ?
       throw new Error("Unprocessed responses");
     }
-    const commandData = command.buildCommand();
+    const commandData = command.buildCommandBuffer();
     if (commandData) {
       let data = Buffer.concat([
         commandData,

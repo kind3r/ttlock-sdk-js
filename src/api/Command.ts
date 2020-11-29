@@ -9,8 +9,9 @@ export interface CommandInterface {
 }
 
 export abstract class Command {
-  protected commandResponse?: CommandResponse;
+  protected commandResponse: CommandResponse = CommandResponse.UNKNOWN;
   protected commandData?: Buffer;
+  protected commandRawData?: Buffer;
 
   constructor(data?: Buffer) {
     if (data) {
@@ -21,6 +22,14 @@ export abstract class Command {
     }
   }
 
-  abstract processData(): void;
+  getResponse(): CommandResponse {
+    return this.commandResponse;
+  }
+
+  getRawData(): Buffer | void {
+    return this.commandRawData;
+  }
+
+  protected abstract processData(): void;
   abstract build(): Buffer;
 }

@@ -87,12 +87,12 @@ TTLockClient.getDefault().stopBTService();
               - store new data in `mReceivedDataBuffer`
               - 2 stoppers for end of data: CRLF at the end or a calculated `leftRecDataCount` (we have to figure it out later)
               - `BluetoothImpl::processCommandResponse` if end of data (remove CRLF if exists)
-                - huge function to process all possible responses
+                - huge function to process all possible command responses
                 - `new Command(values)`, check CRC
                 - `data = command.getData(aesKeyArray)` - for lock init, the CommandUtil::defaultAesKeyArray is used
-                - assume `Command.COMM_RESPONSE`
-                - data[1] == CommandResponse.SUCCESS
-                - 
+                - assume `Command.COMM_GET_AES_KEY`
+                - check data[1] == CommandResponse.SUCCESS
+                - `CommandUtil::V_addAdmin` with random `adminPs` and `unlockKey` (10 digit numbers, first digit always 0, so basically 9 digits)
 ```java
 TTLockClient.getDefault().initLock(device, new InitLockCallback() {
     @Override

@@ -4,6 +4,8 @@ import { CommandType } from "../constant/CommandType";
 import { CodecUtils } from "../util/CodecUtils";
 import { LockType, LockVersion } from "../constant/Lock";
 import { AESUtil } from "../util/AESUtil";
+import { Command } from "./Command";
+import { commandFromData, commandFromType } from "./commandBuilder";
 
 const DEFAULT_HEADER = Buffer.from([0x7F, 0x5A]);
 
@@ -15,11 +17,12 @@ export class CommandEnvelope {
   private scene: number = -1;
   private organization: number = -1;
   private sub_organization: number = -1;
-  private command: CommandType = -1;
+  private commandType: CommandType = -1;
   private encrypt: number = 0;
   private data: Buffer = Buffer.from([]);
   private lockType: LockType = LockType.UNKNOWN;
   private aesKey?: Buffer;
+  private command?: Command;
 
   /**
    * Create a command from raw data usually received from characteristic change
@@ -40,7 +43,7 @@ export class CommandEnvelope {
       command.scene = rawData.readInt8(4);
       command.organization = rawData.readInt16BE(5); // or readInt16LE ?
       command.sub_organization = rawData.readInt16BE(7);
-      command.command = rawData.readUInt8(9);
+      command.commandType = rawData.readUInt8(9);
       command.encrypt = rawData.readInt8(10);
       const length = rawData.readInt8(11);
       if (length < 0 || rawData.length < 12 + length + 1) { // header + data + crc 
@@ -52,7 +55,7 @@ export class CommandEnvelope {
         command.data = Buffer.from([]);
       }
     } else {
-      command.command = rawData.readUInt8(3);
+      command.commandType = rawData.readUInt8(3);
       command.encrypt = rawData.readInt8(4);
       const length = rawData.readInt8(5);
       if (length < 0 || rawData.length < 6 + length + 1) {
@@ -70,6 +73,7 @@ export class CommandEnvelope {
 
     if (typeof aesKey != "undefined") {
       command.aesKey = aesKey;
+      command.generateCommand();
     }
 
     return command;
@@ -79,7 +83,7 @@ export class CommandEnvelope {
    * Create new command starting from the version of the device
    * @param lockVersion 
    */
-  static createFromLockVersion(lockVersion: LockVersion): CommandEnvelope {
+  static createFromLockVersion(lockVersion: LockVersion, aesKey?: Buffer): CommandEnvelope {
     const command = new CommandEnvelope;
     command.header = DEFAULT_HEADER;
     command.protocol_type = lockVersion.getProtocolType();
@@ -89,13 +93,16 @@ export class CommandEnvelope {
     command.sub_organization = lockVersion.getOrgId();
     command.encrypt = CommandEnvelope.APP_COMMAND;
     command.generateLockType();
+    if (aesKey) {
+      command.setAesKey(aesKey);
+    }
     return command;
   }
 
-  static createFromLockType(lockType: LockType): CommandEnvelope {
+  static createFromLockType(lockType: LockType, aesKey?: Buffer): CommandEnvelope {
     const lockVersion = LockVersion.getLockVersion(lockType);
     if (lockVersion != null) {
-      const command = CommandEnvelope.createFromLockVersion(lockVersion);
+      const command = CommandEnvelope.createFromLockVersion(lockVersion, aesKey);
       if (lockType == LockType.LOCK_TYPE_V2) {
         command.encrypt = Math.round(Math.random() * 126) + 1;
       }
@@ -131,6 +138,7 @@ export class CommandEnvelope {
 
   setAesKey(aesKey: Buffer) {
     this.aesKey = aesKey;
+    this.generateCommand;
   }
 
   setLockType(lockType: LockType) {
@@ -141,23 +149,32 @@ export class CommandEnvelope {
     return this.lockType;
   }
 
-  setCommand(command: CommandType) {
-    this.command = command;
+  setCommandType(command: CommandType) {
+    this.commandType = command;
+    this.generateCommand();
   }
 
-  getCommand(): CommandType {
-    return this.command;
+  getCommandType(): CommandType {
+    return this.commandType;
   }
 
-  setData(data: Buffer): void {
-    if (this.aesKey) {
-      this.data = AESUtil.aesEncrypt(data, this.aesKey);
+  getCommand(): Command {
+    if (this.command) {
+      return this.command;
     } else {
-      this.data = CodecUtils.encodeWithEncrypt(data, this.encrypt);
+      throw new Error("Command has not been generated");
     }
   }
 
-  getData(): Buffer {
+  // private setData(data: Buffer): void {
+  //   if (this.aesKey) {
+  //     this.data = AESUtil.aesEncrypt(data, this.aesKey);
+  //   } else {
+  //     this.data = CodecUtils.encodeWithEncrypt(data, this.encrypt);
+  //   }
+  // }
+
+  private getData(): Buffer {
     if (this.aesKey) {
       return AESUtil.aesDecrypt(this.data, this.aesKey);
     } else {
@@ -165,10 +182,20 @@ export class CommandEnvelope {
     }
   }
 
-  buildCommand(): Buffer {
+  buildCommandBuffer(): Buffer {
+    if (typeof this.command == "undefined") {
+      throw new Error("Command has not been generated");
+    }
+    if (typeof this.aesKey == "undefined") {
+      throw new Error("AES key has not been set");
+    }
+
     const org = new Int16Array(2);
     org[0] = this.organization;
     org[1] = this.sub_organization;
+    const data = this.command.build();
+    const encryptedData = AESUtil.aesEncrypt(data, this.aesKey);
+
     let command = Buffer.concat([
       this.header,
       Buffer.from([
@@ -178,11 +205,11 @@ export class CommandEnvelope {
       ]),
       Buffer.from(org.buffer),
       Buffer.from([
-        this.command,
+        this.commandType,
         this.encrypt,
-        this.data.length
+        encryptedData.length
       ]),
-      this.data
+      encryptedData
     ]);
 
     const crc = CodecUtils.crccompute(command);
@@ -192,5 +219,30 @@ export class CommandEnvelope {
     ]);
 
     return command;
+  }
+
+  /**
+   * Generate the command from the commandType and data
+   * 
+   * Command should be built when
+   * - creating the envelope from data (received command/response) but only after having the aesKey
+   * - creating a new envelope and we have the commandType and aesKey
+   * 
+   */
+  private generateCommand() {
+    if (this.commandType != -1 && this.aesKey) {
+      // only generate if no command exists
+      if (typeof this.command == "undefined") {
+        if (this.data.length > 0) {
+          // create a new command using data
+          // this is used for receiving command responses or notifications from the lock
+          this.command = commandFromData(this.getData());
+        } else {
+          // create a new blank command from the current commandType
+          // this is used for sending commands to the lock
+          this.command = commandFromType(this.commandType);
+        }
+      }
+    }
   }
 }

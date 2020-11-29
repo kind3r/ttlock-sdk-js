@@ -1,8 +1,9 @@
 'use strict';
 
-import { commandBuilder } from "../api/commandBuilder";
+import { commandFromData } from "../api/commandBuilder";
 import { CommandEnvelope } from "../api/CommandEnvelope";
-import { GetAESKeyCommand } from "../api/Commands";
+import { AddAdmin, AESKeyCommand } from "../api/Commands";
+import { CommandResponse } from "../constant/CommandResponse";
 import { CommandType } from "../constant/CommandType";
 import { defaultAESKey } from "../util/AESUtil";
 import { TTBluetoothDevice } from "./TTBluetoothDevice";
@@ -11,6 +12,8 @@ export class TTLock {
   initialized: boolean = false;
   private device: TTBluetoothDevice;
   private aesKey: Buffer = defaultAESKey;
+  private adminPassword?: number;
+  private unlockNumber?: number;
 
   constructor(device: TTBluetoothDevice) {
     this.device = device;
@@ -45,23 +48,35 @@ export class TTLock {
 
     // TODO: also check if lock is already inited (has AES key)
 
-    const getAesKeyCommand = CommandEnvelope.createFromLockType(this.device.lockType);
-    getAesKeyCommand.setCommand(CommandType.COMM_GET_AES_KEY);
-    getAesKeyCommand.setAesKey(this.aesKey);
-    getAesKeyCommand.setData(Buffer.from("SCIENER"));
-    console.log("Sent getAESKey command:", getAesKeyCommand, getAesKeyCommand.getData().toString());
-    const getAesKeyResponse = await this.device.sendCommand(getAesKeyCommand);
-    if (getAesKeyResponse) {
-      getAesKeyResponse.setAesKey(this.aesKey);
-      console.log("Received getAESKey response:", getAesKeyResponse);
-      const cmd = commandBuilder(getAesKeyResponse.getData());
-      if (cmd instanceof GetAESKeyCommand) {
-        const command = cmd as GetAESKeyCommand;
+    const getAesKeyEnvelope = CommandEnvelope.createFromLockType(this.device.lockType, this.aesKey);
+    getAesKeyEnvelope.setCommandType(CommandType.COMM_GET_AES_KEY);
+    console.log("Sent getAESKey command:", getAesKeyEnvelope, getAesKeyEnvelope.buildCommandBuffer().toString("hex"));
+    const getAesKeyResponseEnvelope = await this.device.sendCommand(getAesKeyEnvelope);
+    if (getAesKeyResponseEnvelope) {
+      getAesKeyResponseEnvelope.setAesKey(this.aesKey);
+      console.log("Received getAESKey response:", getAesKeyResponseEnvelope);
+      let cmd = getAesKeyResponseEnvelope.getCommand();
+      if (cmd.getResponse() != CommandResponse.SUCCESS) {
+        throw new Error("Failed getting AES key from lock");
+      }
+      if (cmd instanceof AESKeyCommand) {
+        const command = cmd as AESKeyCommand;
         const aesKey = command.getAESKey();
         if (aesKey) {
-          console.log("Got AES key", aesKey.toString("hex"));
           this.aesKey = aesKey;
-          // TODO: continue the initialisation flow
+          console.log("Got AES key", aesKey.toString("hex"));
+          const addAdminCommandEnvelope = CommandEnvelope.createFromLockType(this.device.lockType, this.aesKey);
+          addAdminCommandEnvelope.setCommandType(CommandType.COMM_ADD_ADMIN);
+          const addAdminCommand = addAdminCommandEnvelope.getCommand() as AddAdmin;
+          this.adminPassword = addAdminCommand.setAdminPassword();
+          this.unlockNumber = addAdminCommand.setUnlockNumber();
+          console.log("Setting adminPassword", this.adminPassword, "and unlockNumber", this.unlockNumber);
+          return false; // disable sending this for the moment
+          const addAdminResponseEnvelope = await this.device.sendCommand(addAdminCommandEnvelope);
+          if (cmd.getResponse() != CommandResponse.SUCCESS) {
+            throw new Error("Failed setting admin");
+          }
+
         } else {
           console.error("No AES key received");
         }
@@ -83,8 +98,10 @@ export class TTLock {
     // is this just a notification (like the lock was locked/unlocked etc.)
     command.setAesKey(this.aesKey);
     console.log("Received:", command);
-    const data = command.getData();
-    console.log("Data", data.toString("hex"));
+    const data = command.getCommand().getRawData();
+    if (data) {
+      console.log("Data", data.toString("hex"));
+    }
   }
 
 

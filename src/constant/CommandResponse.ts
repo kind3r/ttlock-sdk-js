@@ -1,7 +1,7 @@
 'use strict';
 
 export enum CommandResponse {
-	
+	UNKNOWN = -1,
 	SUCCESS 						= 0X01,
 	FAILED 						= 0X00,
 	
