@@ -7,7 +7,7 @@ import { Command } from "../Command";
 
 export class DeviceFeaturesCommand extends Command {
   static COMMAND_TYPE: CommandType = CommandType.COMM_SEARCHE_DEVICE_FEATURE;
-  
+
   private batteryCapacity?: number;
   private special?: number;
   private featureList: Set<FeatureValue> = new Set();
@@ -15,7 +15,8 @@ export class DeviceFeaturesCommand extends Command {
   protected processData(): void {
     this.batteryCapacity = this.commandData?.readInt8(0);
     this.special = this.commandData?.readInt32BE(1);
-    const features = this.commandData?.readBigInt64BE(1);
+    console.log(this.commandData);
+    const features = this.commandData?.readInt32BE(1);
     console.log("Got features: ", features, "from", this.commandData?.subarray(1));
     if (features) {
       this.featureList = this.processFeatures(features);
@@ -47,7 +48,7 @@ export class DeviceFeaturesCommand extends Command {
     }
   }
 
-  protected processFeatures(features: bigint): Set<FeatureValue> {
+  protected processFeatures(features: number): Set<FeatureValue> {
     let featureList: Set<FeatureValue> = new Set();
     const featuresBinary = features.toString(2);
     Object.values(FeatureValue).forEach((feature) => {
