@@ -190,9 +190,10 @@ export class CommandEnvelope {
       throw new Error("AES key has not been set");
     }
 
-    const org = new Int16Array(2);
-    org[0] = this.organization;
-    org[1] = this.sub_organization;
+    const org = new ArrayBuffer(4);
+    const dataView = new DataView(org);
+    dataView.setInt16(0, this.organization, false); // Bin Endian
+    dataView.setInt16(2, this.sub_organization, false); // Bin Endian
     const data = this.command.build();
     const encryptedData = AESUtil.aesEncrypt(data, this.aesKey);
 
@@ -203,7 +204,7 @@ export class CommandEnvelope {
         this.sub_version,
         this.scene
       ]),
-      Buffer.from(org.buffer),
+      Buffer.from(org),
       Buffer.from([
         this.commandType,
         this.encrypt,
