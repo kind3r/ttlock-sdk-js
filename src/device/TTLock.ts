@@ -15,8 +15,8 @@ import { FeatureValue } from "../constant/FeatureValue";
 import { LockType } from "../constant/Lock";
 import { defaultAESKey } from "../util/AESUtil";
 import { stringifyBuffers } from "../util/jsonUtil";
-import { AdminInterface } from "./AdminInterface";
-import { PrivateDataInterface } from "./PrivateDataInterface";
+import { AdminType } from "./AdminType";
+import { PrivateDataType } from "./PrivateDataType";
 import { TTBluetoothDevice } from "./TTBluetoothDevice";
 
 export class TTLock {
@@ -31,7 +31,7 @@ export class TTLock {
   private remoteUnlock?: ConfigRemoteUnlock.OP_OPEN | ConfigRemoteUnlock.OP_CLOSE;
 
   // sensitive data
-  private privateData: PrivateDataInterface = {
+  private privateData: PrivateDataType = {
     aesKey: defaultAESKey,
   }
 
@@ -197,14 +197,14 @@ export class TTLock {
   /**
    * Send AddAdmin command
    */
-  private async addAdminCommand(aesKey?: Buffer): Promise<AdminInterface> {
+  private async addAdminCommand(aesKey?: Buffer): Promise<AdminType> {
     if (typeof aesKey == "undefined") {
       aesKey = this.privateData.aesKey;
     }
     const requestEnvelope = CommandEnvelope.createFromLockType(this.device.lockType, aesKey);
     requestEnvelope.setCommandType(CommandType.COMM_ADD_ADMIN);
     const addAdminCommand = requestEnvelope.getCommand() as AddAdminCommand;
-    const admin: AdminInterface = {
+    const admin: AdminType = {
       adminPs: addAdminCommand.setAdminPs(),
       unlockKey: addAdminCommand.setUnlockKey(),
     }

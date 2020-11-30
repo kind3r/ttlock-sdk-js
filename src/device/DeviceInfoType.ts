@@ -1,6 +1,6 @@
 'use strict';
 
-export declare interface DeviceInfoInterface {
+export declare type DeviceInfoType = {
   /**
    * hex feature
    */

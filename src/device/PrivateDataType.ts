@@ -1,11 +1,11 @@
 'use strict';
 
 import { CodeSecret } from "../api/Commands/InitPasswordsCommand";
-import { AdminInterface } from "./AdminInterface";
+import { AdminType } from "./AdminType";
 
-export declare interface PrivateDataInterface {
+export declare type PrivateDataType = {
   aesKey: Buffer;
-  admin?: AdminInterface;
+  admin?: AdminType;
   unlockKey?: number;
   adminPasscode?: string;
   pwdInfo?: CodeSecret[];
