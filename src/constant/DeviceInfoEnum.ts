@@ -1,6 +1,6 @@
 'use strict';
 
-export enum DeviceInfoType {
+export enum DeviceInfoEnum {
   /**
    * Product number
    */

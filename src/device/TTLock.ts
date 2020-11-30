@@ -4,18 +4,21 @@ import { CommandEnvelope } from "../api/CommandEnvelope";
 import {
   AddAdminCommand, AESKeyCommand, AudioManageCommand,
   InitPasswordsCommand, ScreenPasscodeManageCommand, SetAdminKeyboardPwdCommand,
-  ControlRemoteUnlockCommand, DeviceFeaturesCommand, OperateFinishedCommand
+  ControlRemoteUnlockCommand, DeviceFeaturesCommand, OperateFinishedCommand,
+  ReadDeviceInfoCommand
 } from "../api/Commands";
 import { CodeSecret } from "../api/Commands/InitPasswordsCommand";
 import { AudioManage } from "../constant/AudioManage";
 import { CommandResponse } from "../constant/CommandResponse";
 import { CommandType } from "../constant/CommandType";
 import { ConfigRemoteUnlock } from "../constant/ConfigRemoteUnlock";
+import { DeviceInfoEnum } from "../constant/DeviceInfoEnum";
 import { FeatureValue } from "../constant/FeatureValue";
 import { LockType } from "../constant/Lock";
 import { defaultAESKey } from "../util/AESUtil";
 import { stringifyBuffers } from "../util/jsonUtil";
 import { AdminType } from "./AdminType";
+import { DeviceInfoType } from "./DeviceInfoType";
 import { PrivateDataType } from "./PrivateDataType";
 import { TTBluetoothDevice } from "./TTBluetoothDevice";
 
@@ -29,7 +32,7 @@ export class TTLock {
   private autoLockTime?: number;
   private lightingTime?: number;
   private remoteUnlock?: ConfigRemoteUnlock.OP_OPEN | ConfigRemoteUnlock.OP_CLOSE;
-
+  private deviceInfo?: DeviceInfoType;
   // sensitive data
   private privateData: PrivateDataType = {}
 
@@ -69,83 +72,81 @@ export class TTLock {
     try {
       // Get AES key
       const aesKey = await this.getAESKeyCommand();
+
+      // Add admin
+      const admin = await this.addAdminCommand(aesKey);
+
+      // Calibrate time
+      await this.calibrateTimeCommand(aesKey);
+
+      // Search device features
       const featureList = await this.searchDeviceFeatureCommand(aesKey);
-      throw new Error("Init is paused at this stage for safety reasons");
 
-      // // Add admin
-      // const admin = await this.addAdminCommand(aesKey);
+      let switchState: any,
+        lockSound: AudioManage.TURN_ON | AudioManage.TURN_OFF | undefined,
+        displayPasscode: 0 | 1 | undefined,
+        autoLockTime: number | undefined,
+        lightingTime: number | undefined,
+        adminPasscode: string | undefined,
+        pwdInfo: CodeSecret[] | undefined,
+        remoteUnlock: ConfigRemoteUnlock.OP_OPEN | ConfigRemoteUnlock.OP_CLOSE | undefined;
 
-      // // Calibrate time
-      // await this.calibrateTimeCommand(aesKey);
+      // Feature depended queries
+      if (featureList.has(FeatureValue.RESET_BUTTON)
+        || featureList.has(FeatureValue.TAMPER_ALERT)
+        || featureList.has(FeatureValue.PRIVACK_LOCK)) {
+        switchState = await this.getSwitchStateCommand(undefined, aesKey);
+        console.log("switchState", switchState);
+      }
+      if (featureList.has(FeatureValue.AUDIO_MANAGEMENT)) {
+        lockSound = await this.audioManageCommand(undefined, aesKey);
+        console.log("lockSound", lockSound);
+      }
+      if (featureList.has(FeatureValue.PASSWORD_DISPLAY_OR_HIDE)) {
+        displayPasscode = await this.screenPasscodeManageCommand(undefined, aesKey);
+        console.log("displayPasscode", displayPasscode);
+      }
+      if (featureList.has(FeatureValue.AUTO_LOCK)) {
+        autoLockTime = await this.searchAutoLockTimeCommand(undefined, aesKey);
+        console.log("autoLockTime", autoLockTime);
+      }
+      if (featureList.has(FeatureValue.LAMP)) {
+        lightingTime = await this.controlLampCommand(undefined, aesKey);
+        console.log("lightingTime", lightingTime);
+      }
+      if (featureList.has(FeatureValue.GET_ADMIN_CODE)) {
+        // Command.COMM_GET_ADMIN_CODE
+      } else if (this.device.lockType == LockType.LOCK_TYPE_V3_CAR) {
+        // Command.COMM_GET_ALARM_ERRCORD_OR_OPERATION_FINISHED
+      } else if (this.device.lockType == LockType.LOCK_TYPE_V3) {
+        adminPasscode = await this.setAdminKeyboardPwdCommand(undefined, aesKey);
+        console.log("adminPasscode", adminPasscode);
+        pwdInfo = await this.initPasswordsCommand(aesKey);
+        console.log("pwdInfo", pwdInfo);
+      }
 
-      // // Search device features
-      // const featureList = await this.searchDeviceFeatureCommand(aesKey);
+      if (featureList.has(FeatureValue.CONFIG_GATEWAY_UNLOCK)) {
+        remoteUnlock = await this.controlRemoteUnlockCommand(ConfigRemoteUnlock.OP_CLOSE, aesKey);
+        console.log("remoteUnlock", remoteUnlock);
+      }
 
-      // let switchState: any,
-      //   lockSound: AudioManage.TURN_ON | AudioManage.TURN_OFF | undefined,
-      //   displayPasscode: 0 | 1 | undefined,
-      //   autoLockTime: number | undefined,
-      //   lightingTime: number | undefined,
-      //   adminPasscode: string | undefined,
-      //   pwdInfo: CodeSecret[] | undefined,
-      //   remoteUnlock: ConfigRemoteUnlock.OP_OPEN | ConfigRemoteUnlock.OP_CLOSE | undefined;
+      await this.operateFinishedCommand(aesKey);
 
-      // // Feature depended queries
-      // if (featureList.has(FeatureValue.RESET_BUTTON)
-      //   || featureList.has(FeatureValue.TAMPER_ALERT)
-      //   || featureList.has(FeatureValue.PRIVACK_LOCK)) {
-      //   switchState = await this.getSwitchStateCommand(undefined, aesKey);
-      //   console.log("switchState", switchState);
-      // }
-      // if (featureList.has(FeatureValue.AUDIO_MANAGEMENT)) {
-      //   lockSound = await this.audioManageCommand(undefined, aesKey);
-      //   console.log("lockSound", lockSound);
-      // }
-      // if (featureList.has(FeatureValue.PASSWORD_DISPLAY_OR_HIDE)) {
-      //   displayPasscode = await this.screenPasscodeManageCommand(undefined, aesKey);
-      //   console.log("displayPasscode", displayPasscode);
-      // }
-      // if (featureList.has(FeatureValue.AUTO_LOCK)) {
-      //   autoLockTime = await this.searchAutoLockTimeCommand(undefined, aesKey);
-      //   console.log("autoLockTime", autoLockTime);
-      // }
-      // if (featureList.has(FeatureValue.LAMP)) {
-      //   lightingTime = await this.controlLampCommand(undefined, aesKey);
-      //   console.log("lightingTime", lightingTime);
-      // }
-      // if (featureList.has(FeatureValue.GET_ADMIN_CODE)) {
-      //   // Command.COMM_GET_ADMIN_CODE
-      // } else if (this.device.lockType == LockType.LOCK_TYPE_V3_CAR) {
-      //   // Command.COMM_GET_ALARM_ERRCORD_OR_OPERATION_FINISHED
-      // } else if (this.device.lockType == LockType.LOCK_TYPE_V3) {
-      //   adminPasscode = await this.setAdminKeyboardPwdCommand(undefined, aesKey);
-      //   console.log("adminPasscode", adminPasscode);
-      //   pwdInfo = await this.initPasswordsCommand(aesKey);
-      //   console.log("pwdInfo", pwdInfo);
-      // }
+      // save all the data we gathered during init sequence
+      if (aesKey) this.privateData.aesKey = aesKey;
+      if (admin) this.privateData.admin = admin;
+      if (featureList) this.featureList = featureList;
+      if (switchState) this.switchState = switchState;
+      if (lockSound) this.lockSound = lockSound;
+      if (displayPasscode) this.displayPasscode = displayPasscode;
+      if (autoLockTime) this.autoLockTime = autoLockTime;
+      if (lightingTime) this.lightingTime = lightingTime;
+      if (adminPasscode) this.privateData.adminPasscode = adminPasscode;
+      if (pwdInfo) this.privateData.pwdInfo = pwdInfo;
+      if (remoteUnlock) this.remoteUnlock = remoteUnlock;
 
-      // if (featureList.has(FeatureValue.CONFIG_GATEWAY_UNLOCK)) {
-      //   remoteUnlock = await this.controlRemoteUnlockCommand(ConfigRemoteUnlock.OP_CLOSE, aesKey);
-      //   console.log("remoteUnlock", remoteUnlock);
-      // }
-
-      // await this.operateFinishedCommand(aesKey);
-
-      // // save all the data we gathered during init sequence
-      // if (aesKey) this.privateData.aesKey = aesKey;
-      // if (admin) this.privateData.admin = admin;
-      // if (featureList) this.featureList = featureList;
-      // if (switchState) this.switchState = switchState;
-      // if (lockSound) this.lockSound = lockSound;
-      // if (displayPasscode) this.displayPasscode = displayPasscode;
-      // if (autoLockTime) this.autoLockTime = autoLockTime;
-      // if (lightingTime) this.lightingTime = lightingTime;
-      // if (adminPasscode) this.privateData.adminPasscode = adminPasscode;
-      // if (pwdInfo) this.privateData.pwdInfo = pwdInfo;
-      // if (remoteUnlock) this.remoteUnlock = remoteUnlock;
-
-      // // read device information
-
+      // read device information
+      this.deviceInfo = await this.readAllDeviceInfo(aesKey);
 
     } catch (error) {
       console.error("Error while initialising lock", error);
@@ -496,6 +497,72 @@ export class TTLock {
     }
   }
 
+  private async readDeviceInfoCommand(infoType: DeviceInfoEnum, aesKey?: Buffer): Promise<Buffer> {
+    if (typeof aesKey == "undefined") {
+      if (this.privateData.aesKey) {
+        aesKey = this.privateData.aesKey;
+      } else {
+        throw new Error("No AES key for lock");
+      }
+    }
+    const requestEnvelope = CommandEnvelope.createFromLockType(this.device.lockType, aesKey);
+    requestEnvelope.setCommandType(CommandType.COMM_READ_DEVICE_INFO);
+    let cmd = requestEnvelope.getCommand() as ReadDeviceInfoCommand;
+    cmd.setInfoType(infoType);
+    const responseEnvelope = await this.device.sendCommand(requestEnvelope);
+    if (responseEnvelope) {
+      responseEnvelope.setAesKey(aesKey);
+      cmd = responseEnvelope.getCommand() as ReadDeviceInfoCommand;
+      if (cmd.getResponse() != CommandResponse.SUCCESS) {
+        throw new Error("Failed to set operateFinished");
+      }
+      const infoData = cmd.getInfoData();
+      if (infoData) {
+        return infoData;
+      } else {
+        return Buffer.from([]);
+      }
+    } else {
+      throw new Error("No response to operateFinished");
+    }
+  }
+
+  private async readAllDeviceInfo(aesKey?: Buffer): Promise<DeviceInfoType> {
+    if (typeof aesKey == "undefined") {
+      if (this.privateData.aesKey) {
+        aesKey = this.privateData.aesKey;
+      } else {
+        throw new Error("No AES key for lock");
+      }
+    }
+
+    const deviceInfo: DeviceInfoType = {
+      featureValue: "",
+      modelNum: "",
+      hardwareRevision: "",
+      firmwareRevision: "",
+      nbNodeId: "",
+      nbOperator: "",
+      nbCardNumber: "",
+      nbRssi: -1,
+      factoryDate: "",
+      lockClock: "",
+    }
+
+    deviceInfo.modelNum = (await this.readDeviceInfoCommand(DeviceInfoEnum.MODEL_NUMBER, aesKey)).toString();
+    deviceInfo.hardwareRevision = (await this.readDeviceInfoCommand(DeviceInfoEnum.HARDWARE_REVISION, aesKey)).toString();
+    deviceInfo.firmwareRevision = (await this.readDeviceInfoCommand(DeviceInfoEnum.FIRMWARE_REVISION, aesKey)).toString();
+    deviceInfo.factoryDate = (await this.readDeviceInfoCommand(DeviceInfoEnum.MANUFACTURE_DATE, aesKey)).toString();
+    if (this.featureList && this.featureList.has(FeatureValue.NB_LOCK)) {
+      deviceInfo.nbOperator = (await this.readDeviceInfoCommand(DeviceInfoEnum.NB_OPERATOR, aesKey)).toString();
+      deviceInfo.nbNodeId = (await this.readDeviceInfoCommand(DeviceInfoEnum.NB_IMEI, aesKey)).toString();
+      deviceInfo.nbCardNumber = (await this.readDeviceInfoCommand(DeviceInfoEnum.NB_CARD_INFO, aesKey)).toString();
+      deviceInfo.nbRssi = (await this.readDeviceInfoCommand(DeviceInfoEnum.NB_RSSI, aesKey)).readInt8(0);
+    }
+
+    return deviceInfo;
+  }
+
   private onDataReceived(command: CommandEnvelope) {
     // is this just a notification (like the lock was locked/unlocked etc.)
     if (this.privateData.aesKey) {
@@ -521,7 +588,7 @@ export class TTLock {
     if (this.autoLockTime) Reflect.set(json, 'autoLockTime', this.autoLockTime);
     if (this.lightingTime) Reflect.set(json, 'lightingTime', this.lightingTime);
     if (this.remoteUnlock) Reflect.set(json, 'remoteUnlock', this.remoteUnlock);
-    
+    if (this.deviceInfo) Reflect.set(json, 'deviceInfo', this.deviceInfo);
     Reflect.set(json, 'privateData', this.privateData);
 
     if (asObject) {
