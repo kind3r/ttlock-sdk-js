@@ -1,9 +1,12 @@
 'use strict';
 
 import { EventEmitter } from "events";
+import { FeatureValue } from "../constant/FeatureValue";
 import { LockType } from "../constant/Lock";
+import { defaultAESKey } from "../util/AESUtil";
 
 export class TTDevice extends EventEmitter {
+  // public data
   id: string = "";
   uuid: string = "";
   name: string = "";
@@ -48,6 +51,13 @@ export class TTDevice extends EventEmitter {
   remoteUnlockSwitch: number = 0;
   disconnectStatus: number = 0;
   parkStatus: number = 0;
+  featureList?: Set<FeatureValue>;
+
+  // sensitive data
+  aesKey: Buffer = defaultAESKey;
+  adminPs?: number;
+  unlockKey?: number;
+  adminPasscode?: string;
 
   toJSON(asObject:boolean = false): string | Object {
     const temp = new TTDevice();

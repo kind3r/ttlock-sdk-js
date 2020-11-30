@@ -11,3 +11,4 @@ export { ScreenPasscodeManageCommand } from "./ScreenPasscodeManageCommand";
 export { SearchAutoLockTimeCommand } from "./SearchAutoLockTimeCommand";
 export { ControlLampCommand } from "./ControlLampCommand";
 export { SetAdminKeyboardPwdCommand } from "./SetAdminKeyboardPwdCommand";
+export { InitPasswordsCommand } from "./InitPasswordsCommand";
