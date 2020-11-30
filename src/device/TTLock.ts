@@ -31,9 +31,7 @@ export class TTLock {
   private remoteUnlock?: ConfigRemoteUnlock.OP_OPEN | ConfigRemoteUnlock.OP_CLOSE;
 
   // sensitive data
-  private privateData: PrivateDataType = {
-    aesKey: defaultAESKey,
-  }
+  private privateData: PrivateDataType = {}
 
   constructor(device: TTBluetoothDevice) {
     this.device = device;
@@ -170,7 +168,7 @@ export class TTLock {
     console.log("Sent getAESKey command:", requestEnvelope, requestEnvelope.buildCommandBuffer().toString("hex"));
     const responseEnvelope = await this.device.sendCommand(requestEnvelope);
     if (responseEnvelope) {
-      responseEnvelope.setAesKey(this.privateData.aesKey);
+      responseEnvelope.setAesKey(defaultAESKey);
       console.log("Received getAESKey response:", responseEnvelope);
       let cmd = responseEnvelope.getCommand();
       if (cmd.getResponse() != CommandResponse.SUCCESS) {
@@ -199,7 +197,11 @@ export class TTLock {
    */
   private async addAdminCommand(aesKey?: Buffer): Promise<AdminType> {
     if (typeof aesKey == "undefined") {
-      aesKey = this.privateData.aesKey;
+      if (this.privateData.aesKey) {
+        aesKey = this.privateData.aesKey;
+      } else {
+        throw new Error("No AES key for lock");
+      }
     }
     const requestEnvelope = CommandEnvelope.createFromLockType(this.device.lockType, aesKey);
     requestEnvelope.setCommandType(CommandType.COMM_ADD_ADMIN);
@@ -227,7 +229,11 @@ export class TTLock {
    */
   private async calibrateTimeCommand(aesKey?: Buffer): Promise<void> {
     if (typeof aesKey == "undefined") {
-      aesKey = this.privateData.aesKey;
+      if (this.privateData.aesKey) {
+        aesKey = this.privateData.aesKey;
+      } else {
+        throw new Error("No AES key for lock");
+      }
     }
     const requestEnvelope = CommandEnvelope.createFromLockType(this.device.lockType, aesKey);
     requestEnvelope.setCommandType(CommandType.COMM_TIME_CALIBRATE);
@@ -248,7 +254,11 @@ export class TTLock {
    */
   private async searchDeviceFeatureCommand(aesKey?: Buffer): Promise<Set<FeatureValue>> {
     if (typeof aesKey == "undefined") {
-      aesKey = this.privateData.aesKey;
+      if (this.privateData.aesKey) {
+        aesKey = this.privateData.aesKey;
+      } else {
+        throw new Error("No AES key for lock");
+      }
     }
     const requestEnvelope = CommandEnvelope.createFromLockType(this.device.lockType, aesKey);
     requestEnvelope.setCommandType(CommandType.COMM_SEARCHE_DEVICE_FEATURE);
@@ -274,7 +284,11 @@ export class TTLock {
    */
   private async audioManageCommand(newValue?: AudioManage.TURN_ON | AudioManage.TURN_OFF, aesKey?: Buffer): Promise<AudioManage.TURN_ON | AudioManage.TURN_OFF> {
     if (typeof aesKey == "undefined") {
-      aesKey = this.privateData.aesKey;
+      if (this.privateData.aesKey) {
+        aesKey = this.privateData.aesKey;
+      } else {
+        throw new Error("No AES key for lock");
+      }
     }
     const requestEnvelope = CommandEnvelope.createFromLockType(this.device.lockType, aesKey);
     requestEnvelope.setCommandType(CommandType.COMM_AUDIO_MANAGE);
@@ -309,7 +323,11 @@ export class TTLock {
    */
   private async screenPasscodeManageCommand(newValue?: 0 | 1, aesKey?: Buffer): Promise<0 | 1> {
     if (typeof aesKey == "undefined") {
-      aesKey = this.privateData.aesKey;
+      if (this.privateData.aesKey) {
+        aesKey = this.privateData.aesKey;
+      } else {
+        throw new Error("No AES key for lock");
+      }
     }
     const requestEnvelope = CommandEnvelope.createFromLockType(this.device.lockType, aesKey);
     requestEnvelope.setCommandType(CommandType.COMM_SHOW_PASSWORD);
@@ -352,7 +370,11 @@ export class TTLock {
    */
   private async setAdminKeyboardPwdCommand(adminPasscode?: string, aesKey?: Buffer): Promise<string> {
     if (typeof aesKey == "undefined") {
-      aesKey = this.privateData.aesKey;
+      if (this.privateData.aesKey) {
+        aesKey = this.privateData.aesKey;
+      } else {
+        throw new Error("No AES key for lock");
+      }
     }
     if (typeof adminPasscode == "undefined") {
       adminPasscode = "";
@@ -382,7 +404,11 @@ export class TTLock {
    */
   private async initPasswordsCommand(aesKey?: Buffer): Promise<CodeSecret[]> {
     if (typeof aesKey == "undefined") {
-      aesKey = this.privateData.aesKey;
+      if (this.privateData.aesKey) {
+        aesKey = this.privateData.aesKey;
+      } else {
+        throw new Error("No AES key for lock");
+      }
     }
     const requestEnvelope = CommandEnvelope.createFromLockType(this.device.lockType, aesKey);
     requestEnvelope.setCommandType(CommandType.COMM_INIT_PASSWORDS);
@@ -411,7 +437,11 @@ export class TTLock {
    */
   private async controlRemoteUnlockCommand(newValue?: ConfigRemoteUnlock.OP_CLOSE | ConfigRemoteUnlock.OP_OPEN, aesKey?: Buffer): Promise<ConfigRemoteUnlock.OP_CLOSE | ConfigRemoteUnlock.OP_OPEN> {
     if (typeof aesKey == "undefined") {
-      aesKey = this.privateData.aesKey;
+      if (this.privateData.aesKey) {
+        aesKey = this.privateData.aesKey;
+      } else {
+        throw new Error("No AES key for lock");
+      }
     }
     const requestEnvelope = CommandEnvelope.createFromLockType(this.device.lockType, aesKey);
     requestEnvelope.setCommandType(CommandType.COMM_CONTROL_REMOTE_UNLOCK);
@@ -446,7 +476,11 @@ export class TTLock {
    */
   private async operateFinishedCommand(aesKey?: Buffer): Promise<void> {
     if (typeof aesKey == "undefined") {
-      aesKey = this.privateData.aesKey;
+      if (this.privateData.aesKey) {
+        aesKey = this.privateData.aesKey;
+      } else {
+        throw new Error("No AES key for lock");
+      }
     }
     const requestEnvelope = CommandEnvelope.createFromLockType(this.device.lockType, aesKey);
     requestEnvelope.setCommandType(CommandType.COMM_GET_ALARM_ERRCORD_OR_OPERATION_FINISHED);
@@ -464,11 +498,15 @@ export class TTLock {
 
   private onDataReceived(command: CommandEnvelope) {
     // is this just a notification (like the lock was locked/unlocked etc.)
-    command.setAesKey(this.privateData.aesKey);
-    console.log("Received:", command);
-    const data = command.getCommand().getRawData();
-    if (data) {
-      console.log("Data", data.toString("hex"));
+    if (this.privateData.aesKey) {
+      command.setAesKey(this.privateData.aesKey);
+      console.log("Received:", command);
+      const data = command.getCommand().getRawData();
+      if (data) {
+        console.log("Data", data.toString("hex"));
+      }
+    } else {
+      console.error("Unable to decrypt notification, no AES key");
     }
   }
 
