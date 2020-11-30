@@ -10,7 +10,7 @@ export class CalibrationTimeCommand extends Command {
   private time?: string;
 
   protected processData(): void {
-    throw new Error("Method not implemented.");
+    // nothing to do here 
   }
 
   build(): Buffer {
