@@ -19,7 +19,7 @@ export class AESUtil {
     }
 
     if (key.length != 16) {
-      throw new Error("Invalid key size");
+      throw new Error("Invalid key size:" + key.length);
     }
 
     const cipher = crypto.createCipheriv('aes-128-cbc', key, key);
@@ -36,7 +36,7 @@ export class AESUtil {
     }
 
     if (key.length != 16) {
-      throw new Error("Invalid key size");
+      throw new Error("Invalid key size:" + key.length);
     }
 
     const cipher = crypto.createDecipheriv('aes-128-cbc', key, key);
