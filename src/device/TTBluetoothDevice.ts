@@ -155,7 +155,7 @@ export class TTBluetoothDevice extends TTDevice implements TTBluetoothDevice {
   }
 
   private onIncomingData(data: Buffer) {
-    console.log("Received data:", data.toString("hex"));
+    // console.log("Received data:", data.toString("hex"));
     this.incomingDataBuffer = Buffer.concat([this.incomingDataBuffer, data]);
     console.log("Incoming data buffer:", this.incomingDataBuffer.toString("hex"));
     this.readDeviceResponse();

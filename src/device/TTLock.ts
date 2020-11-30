@@ -166,11 +166,9 @@ export class TTLock {
   private async getAESKeyCommand(): Promise<Buffer> {
     const requestEnvelope = CommandEnvelope.createFromLockType(this.device.lockType, defaultAESKey);
     requestEnvelope.setCommandType(CommandType.COMM_GET_AES_KEY);
-    console.log("Sent getAESKey command:", requestEnvelope, requestEnvelope.buildCommandBuffer().toString("hex"));
     const responseEnvelope = await this.device.sendCommand(requestEnvelope);
     if (responseEnvelope) {
       responseEnvelope.setAesKey(defaultAESKey);
-      console.log("Received getAESKey response:", responseEnvelope);
       let cmd = responseEnvelope.getCommand();
       if (cmd.getResponse() != CommandResponse.SUCCESS) {
         throw new Error("Failed getting AES key from lock");
@@ -179,7 +177,6 @@ export class TTLock {
         const command = cmd as AESKeyCommand;
         const aesKey = command.getAESKey();
         if (aesKey) {
-          // this.privateData.aesKey = aesKey;
           console.log("Got AES key", aesKey.toString("hex"));
           return aesKey;
         } else {
