@@ -108,6 +108,19 @@ TTLockClient.getDefault().stopBTService();
                     - Command.COMM_SET_ADMIN_KEYBOARD_PWD -> CommandUtil.S_setAdminKeyboardPwd
                   - last command seems to set some random passwords `CommandUtil_V3::initPasswords`. After that `CommandUtil_V3::controlRemoteUnlock` and then `CommandUtil::operateFinished`
                   - a last check is being run `CommandUtil.readDeviceInfo` which starts another chain of commands to get more information about the device ending with finally calling `onInitLockSuccess`
+                    - DeviceInfoType.MODEL_NUMBER -> modelNum
+                    - DeviceInfoType.HARDWARE_REVISION -> hardwareRevision
+                    - DeviceInfoType.FIRMWARE_REVISION -> firmwareRevision
+                    - DeviceInfoType.MANUFACTURE_DATE -> factoryDate
+                    - if FeatureValue.NB_LOCK : 
+                      - DeviceInfoType.NB_OPERATOR -> nbOperator
+                      - DeviceInfoType.NB_IMEI -> nbNodeId
+                      - DeviceInfoType.NB_CARD_INFO -> nbCardNumber
+                      - DeviceInfoType.NB_RSSI -> nbRssi
+                        - Posibilitity to run CommandUtil_V3.configureNBServerAddress with transferData.getPort() and transferData.getAddress()
+                        - TODO: check what that is for
+                    - else :
+                      - DeviceInfoType.LOCK_CLOCK -> lockClock
 ```java
 TTLockClient.getDefault().initLock(device, new InitLockCallback() {
     @Override

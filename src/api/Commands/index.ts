@@ -12,3 +12,5 @@ export { SearchAutoLockTimeCommand } from "./SearchAutoLockTimeCommand";
 export { ControlLampCommand } from "./ControlLampCommand";
 export { SetAdminKeyboardPwdCommand } from "./SetAdminKeyboardPwdCommand";
 export { InitPasswordsCommand } from "./InitPasswordsCommand";
+export { ControlRemoteUnlockCommand } from "./ControlRemoteUnlockCommand";
+export { OperateFinishedCommand } from "./OperateFinishedCommand";
