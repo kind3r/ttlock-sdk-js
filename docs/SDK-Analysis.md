@@ -1,5 +1,7 @@
 # Original SDK analisys
 
+> The analisys is done only on the **`LockType.LOCK_TYPE_V3`** that use command protocol V3 lock as there are 7 types of locks that use slightly different type of protocol and features. It is possible to extend in the future to also support this type of locks.
+
 ## SDK init and scanning
 
 - `TTLockClient::getDefault` - singleton*ish* pattern (*most of the classes are like this*)
@@ -100,7 +102,10 @@ TTLockClient.getDefault().stopBTService();
                 - `BluetoothImpl::initLock`
                   - `CommandUtil.searchDeviceFeature`
                   - `BluetoothImpl::genCommandQue` Depending on the features, extra commands are ran agains the lock
-                  - extra commands
+                  - extra commands:
+                    - Command.COMM_AUDIO_MANAGE -> CommandUtil_V3.audioManage
+                    - Command.COMM_SHOW_PASSWORD -> CommandUtil.screenPasscodeManage
+                    - Command.COMM_SET_ADMIN_KEYBOARD_PWD -> CommandUtil.S_setAdminKeyboardPwd
                   - last command seems to set some random passwords `CommandUtil_V3::initPasswords`. After that `CommandUtil_V3::controlRemoteUnlock` and then `CommandUtil::operateFinished`
                   - a last check is being run `CommandUtil.readDeviceInfo` which starts another chain of commands to get more information about the device ending with finally calling `onInitLockSuccess`
 ```java

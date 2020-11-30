@@ -6,37 +6,37 @@ import { Command } from "../Command";
 
 export class AddAdminCommand extends Command {
   static COMMAND_TYPE: CommandType = CommandType.COMM_ADD_ADMIN;
-  private adminPassword?: number;
-  private unlockNumber?: number;
+  private adminPs?: number;
+  private unlockKey?: number;
 
   generateNumber(): number {
     return Math.round(Math.random() * 1000000000);
   }
 
-  setAdminPassword(adminPassword?: number): number {
+  setAdminPs(adminPassword?: number): number {
     if (adminPassword) {
-      this.adminPassword = adminPassword;
+      this.adminPs = adminPassword;
     } else {
-      this.adminPassword = this.generateNumber();
+      this.adminPs = this.generateNumber();
     }
-    return this.adminPassword;
+    return this.adminPs;
   }
 
-  getAdminPassword(): number | undefined {
-    return this.adminPassword;
+  getAdminPs(): number | undefined {
+    return this.adminPs;
   }
 
-  setUnlockNumber(unlockNumber?: number): number {
+  setUnlockKey(unlockNumber?: number): number {
     if (unlockNumber) {
-      this.unlockNumber = unlockNumber;
+      this.unlockKey = unlockNumber;
     } else {
-      this.unlockNumber = this.generateNumber();
+      this.unlockKey = this.generateNumber();
     }
-    return this.unlockNumber;
+    return this.unlockKey;
   }
 
-  getUnlockNumber(): number | undefined {
-    return this.unlockNumber;
+  getUnlockKey(): number | undefined {
+    return this.unlockKey;
   }
 
   protected processData(): void {
@@ -47,8 +47,18 @@ export class AddAdminCommand extends Command {
   }
 
   build(): Buffer {
-
-    throw new Error("Method not implemented.");
+    if (this.adminPs && this.unlockKey) {
+      const adminUnlock = new ArrayBuffer(8);
+      const dataView = new DataView(adminUnlock);
+      dataView.setUint32(0, this.adminPs, false); // Bin Endian
+      dataView.setUint32(4, this.unlockKey, false); // Bin Endian
+      return Buffer.concat([
+        Buffer.from(adminUnlock),
+        Buffer.from("SCIENER"),
+      ]);
+    } else {
+      throw new Error("adminPs and unlockKey were not set");
+    }
   }
 
 }

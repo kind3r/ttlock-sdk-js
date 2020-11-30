@@ -1,6 +1,5 @@
 'use strict';
 
-import { commandFromData } from "../api/commandBuilder";
 import { CommandEnvelope } from "../api/CommandEnvelope";
 import { AddAdminCommand, AESKeyCommand } from "../api/Commands";
 import { DeviceFeaturesCommand } from "../api/Commands/DeviceFeaturesCommand";
@@ -11,16 +10,16 @@ import { defaultAESKey } from "../util/AESUtil";
 import { TTBluetoothDevice } from "./TTBluetoothDevice";
 
 interface AdminInterface {
-  adminPassword: number;
-  unlockNumber: number;
+  adminPs: number;
+  unlockKey: number;
 }
 
 export class TTLock {
   initialized: boolean = false;
   private device: TTBluetoothDevice;
   private aesKey: Buffer = defaultAESKey;
-  private adminPassword?: number;
-  private unlockNumber?: number;
+  private adminPs?: number;
+  private unlockKey?: number;
   private featureList?: Set<FeatureValue>;
 
   constructor(device: TTBluetoothDevice) {
@@ -125,10 +124,10 @@ export class TTLock {
     requestEnvelope.setCommandType(CommandType.COMM_ADD_ADMIN);
     const addAdminCommand = requestEnvelope.getCommand() as AddAdminCommand;
     const admin: AdminInterface = {
-      adminPassword: addAdminCommand.setAdminPassword(),
-      unlockNumber: addAdminCommand.setUnlockNumber(),
+      adminPs: addAdminCommand.setAdminPs(),
+      unlockKey: addAdminCommand.setUnlockKey(),
     }
-    console.log("Setting adminPassword", admin.adminPassword, "and unlockNumber", admin.unlockNumber);
+    console.log("Setting adminPassword", admin.adminPs, "and unlockNumber", admin.unlockKey);
     const responseEnvelope = await this.device.sendCommand(requestEnvelope);
     if (responseEnvelope) {
       responseEnvelope.setAesKey(aesKey);
@@ -185,6 +184,8 @@ export class TTLock {
       throw new Error("No response to search device features");
     }
   }
+
+
 
   private onDataReceived(command: CommandEnvelope) {
     // is this just a notification (like the lock was locked/unlocked etc.)
