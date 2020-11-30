@@ -8,13 +8,13 @@ import { TTLock } from "./device/TTLock";
 import { BluetoothLeService, TTLockUUIDs, ScannerType } from "./scanner/BluetoothLeService";
 import { DeviceDatabase } from "./store/DeviceDatabase";
 
-export declare interface Settings {
+export interface Settings {
   uuids?: string[];
   scannerType?: ScannerType;
   deviceDatabase?: string;
 }
 
-export declare interface TTLockClient {
+export interface TTLockClient {
   on(event: "foundLock", listener: (lock: TTLock) => void): this;
 }
 

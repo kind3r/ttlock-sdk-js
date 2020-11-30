@@ -1,6 +1,6 @@
 'use strict';
 
-export declare interface AdminType {
+export type AdminType = {
   adminPs: number;
   unlockKey: number;
 }

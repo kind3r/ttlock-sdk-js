@@ -3,7 +3,7 @@
 import { CodeSecret } from "../api/Commands/InitPasswordsCommand";
 import { AdminType } from "./AdminType";
 
-export declare type PrivateDataType = {
+export type PrivateDataType = {
   aesKey: Buffer;
   admin?: AdminType;
   unlockKey?: number;

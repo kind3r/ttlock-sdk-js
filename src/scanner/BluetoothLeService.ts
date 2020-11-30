@@ -9,7 +9,7 @@ import { DeviceInterface } from "./DeviceInterface";
 export { ScannerType } from "./ScannerInterface";
 export const TTLockUUIDs: string[] = ["1910", "00001910-0000-1000-8000-00805f9b34fb"];
 
-export declare interface BluetoothLeService {
+export interface BluetoothLeService {
   on(event: "discover", listener: (device: TTBluetoothDevice) => void): this;
 }
 

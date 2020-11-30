@@ -9,7 +9,7 @@ import { TTDevice } from "./TTDevice";
 const CRLF = "0d0a";
 const MTU = 20;
 
-export declare interface TTBluetoothDevice {
+export interface TTBluetoothDevice {
   on(event: "connected", listener: () => void): this;
   on(event: "disconnected", listener: () => void): this;
   on(event: "dataReceived", listener: (command: CommandEnvelope) => void): this;

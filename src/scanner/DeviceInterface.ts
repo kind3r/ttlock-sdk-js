@@ -2,7 +2,7 @@
 
 import { EventEmitter } from "events";
 
-export declare interface DeviceInterface extends EventEmitter {
+export interface DeviceInterface extends EventEmitter {
   id: string;
   uuid: string;
   name: string;
@@ -27,7 +27,7 @@ export declare interface DeviceInterface extends EventEmitter {
   on(event: "disconnected", listener: () => void): this;
 }
 
-export declare interface ServiceInterface {
+export interface ServiceInterface {
   uuid: string;
   name?: string;
   type?: string;
@@ -39,7 +39,7 @@ export declare interface ServiceInterface {
   toString(): string;
 }
 
-export declare interface CharacteristicInterface extends EventEmitter {
+export interface CharacteristicInterface extends EventEmitter {
   uuid: string;
   name?: string;
   type?: string;
@@ -57,7 +57,7 @@ export declare interface CharacteristicInterface extends EventEmitter {
   on(event: "dataRead", listener: (data: Buffer) => void): this;
 }
 
-export declare interface DescriptorInterface {
+export interface DescriptorInterface {
   uuid: string;
   name?: string;
   type?: string;

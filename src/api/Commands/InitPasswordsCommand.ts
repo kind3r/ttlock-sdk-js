@@ -4,7 +4,7 @@ import moment from "moment";
 import { CommandType } from "../../constant/CommandType";
 import { Command } from "../Command";
 
-export declare interface CodeSecret {
+export interface CodeSecret {
   code: number,
   secret: string
 }
