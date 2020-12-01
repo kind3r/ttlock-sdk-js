@@ -17,6 +17,7 @@ import { FeatureValue } from "../constant/FeatureValue";
 import { LockType } from "../constant/Lock";
 import { defaultAESKey } from "../util/AESUtil";
 import { stringifyBuffers } from "../util/jsonUtil";
+import { sleep } from "../util/timingUtil";
 import { AdminType } from "./AdminType";
 import { DeviceInfoType } from "./DeviceInfoType";
 import { PrivateDataType } from "./PrivateDataType";
@@ -34,9 +35,10 @@ export class TTLock {
   private remoteUnlock?: ConfigRemoteUnlock.OP_OPEN | ConfigRemoteUnlock.OP_CLOSE;
   private deviceInfo?: DeviceInfoType;
   // sensitive data
-  private privateData: PrivateDataType = {}
+  private privateData: PrivateDataType;
 
   constructor(device: TTBluetoothDevice) {
+    this.privateData = {};
     this.device = device;
     this.initialized = !device.isSettingMode;
     this.device.on("dataReceived", this.onDataReceived.bind(this));
@@ -440,6 +442,8 @@ export class TTLock {
           console.error(pwdInfo);
           throw new Error("Failed to init passwords");
         }
+        // add some delay
+        await sleep(1000);
         return pwdInfo;
       } else {
         throw new Error("Failed generating pwdInfo");
@@ -508,6 +512,8 @@ export class TTLock {
       if (cmd.getResponse() != CommandResponse.SUCCESS) {
         throw new Error("Failed to set operateFinished");
       }
+      // add some delay
+      await sleep(2000);
     } else {
       throw new Error("No response to operateFinished");
     }
