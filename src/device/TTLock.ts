@@ -5,7 +5,7 @@ import {
   AddAdminCommand, AESKeyCommand, AudioManageCommand,
   InitPasswordsCommand, ScreenPasscodeManageCommand, SetAdminKeyboardPwdCommand,
   ControlRemoteUnlockCommand, DeviceFeaturesCommand, OperateFinishedCommand,
-  ReadDeviceInfoCommand
+  ReadDeviceInfoCommand, AutoLockManageCommand
 } from "../api/Commands";
 import { CodeSecret } from "../api/Commands/InitPasswordsCommand";
 import { AudioManage } from "../constant/AudioManage";
@@ -131,6 +131,8 @@ export class TTLock {
       }
       if (featureList.has(FeatureValue.GET_ADMIN_CODE)) {
         // Command.COMM_GET_ADMIN_CODE
+        console.log("========= getAdminCode");
+        console.log("========= getAdminCode");
       } else if (this.device.lockType == LockType.LOCK_TYPE_V3_CAR) {
         // Command.COMM_GET_ALARM_ERRCORD_OR_OPERATION_FINISHED
       } else if (this.device.lockType == LockType.LOCK_TYPE_V3) {
@@ -377,7 +379,30 @@ export class TTLock {
   }
 
   private async searchAutoLockTimeCommand(newValue?: any, aesKey?: Buffer): Promise<number | undefined> {
-    throw new Error("Method not implemented.");
+    if (typeof aesKey == "undefined") {
+      if (this.privateData.aesKey) {
+        aesKey = this.privateData.aesKey;
+      } else {
+        throw new Error("No AES key for lock");
+      }
+    }
+    const requestEnvelope = CommandEnvelope.createFromLockType(this.device.lockType, aesKey);
+    requestEnvelope.setCommandType(CommandType.COMM_AUTO_LOCK_MANAGE);
+    if (typeof newValue != "undefined") {
+      const cmd = requestEnvelope.getCommand() as AutoLockManageCommand;
+      cmd.setTime(newValue);
+    }
+    const responseEnvelope = await this.device.sendCommand(requestEnvelope);
+    if (responseEnvelope) {
+      responseEnvelope.setAesKey(aesKey);
+      const cmd = responseEnvelope.getCommand() as AutoLockManageCommand;
+      if (cmd.getResponse() != CommandResponse.SUCCESS) {
+        throw new Error("Failed to set screenPasscode mode");
+      }
+      return cmd.getTime();
+    } else {
+      throw new Error("No response to autoLockTime");
+    }
   }
 
   private async controlLampCommand(newValue?: any, aesKey?: Buffer): Promise<number | undefined> {

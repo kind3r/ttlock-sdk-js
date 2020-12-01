@@ -8,7 +8,7 @@ export { DeviceFeaturesCommand } from "./DeviceFeaturesCommand";
 export { GetSwitchStateCommand } from "./GetSwitchStateCommand";
 export { AudioManageCommand } from "./AudioManageCommand";
 export { ScreenPasscodeManageCommand } from "./ScreenPasscodeManageCommand";
-export { SearchAutoLockTimeCommand } from "./SearchAutoLockTimeCommand";
+export { AutoLockManageCommand } from "./AutoLockManageCommand";
 export { ControlLampCommand } from "./ControlLampCommand";
 export { SetAdminKeyboardPwdCommand } from "./SetAdminKeyboardPwdCommand";
 export { InitPasswordsCommand } from "./InitPasswordsCommand";
