@@ -73,7 +73,7 @@ export class TTLock {
       // Get AES key
       console.log("========= AES key");
       const aesKey = await this.getAESKeyCommand();
-      console.log("========= AES key:", aesKey);
+      console.log("========= AES key:", aesKey.toString("hex"));
 
       // Add admin
       console.log("========= admin");
@@ -436,7 +436,7 @@ export class TTLock {
         cmd = responseEnvelope.getCommand() as InitPasswordsCommand;
         if (cmd.getResponse() != CommandResponse.SUCCESS) {
           console.error(pwdInfo);
-          throw new Error("Failed to set adminPasscode");
+          throw new Error("Failed to init passwords");
         }
         return pwdInfo;
       } else {
