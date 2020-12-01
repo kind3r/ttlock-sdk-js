@@ -18,7 +18,7 @@ export class ReadDeviceInfoCommand extends Command {
 
   getInfoData(): Buffer | void {
     if (this.commandData) {
-      return this.commandData;
+      return this.commandData.subarray(0, this.commandData.length - 1);
     }
   }
 

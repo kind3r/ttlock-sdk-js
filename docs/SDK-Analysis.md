@@ -104,8 +104,8 @@ TTLockClient.getDefault().stopBTService();
                   - `BluetoothImpl::genCommandQue` Depending on the features, extra commands are ran agains the lock
                   - extra commands:
                     - Command.COMM_AUDIO_MANAGE -> CommandUtil_V3.audioManage
-                    - Command.COMM_SHOW_PASSWORD -> CommandUtil.screenPasscodeManage
-                    - Command.COMM_SET_ADMIN_KEYBOARD_PWD -> CommandUtil.S_setAdminKeyboardPwd
+                    - Command.COMM_AUTO_LOCK_MANAGE -> CommandUtil.searchAutoLockTime
+                    - Command.COMM_GET_ADMIN_CODE -> CommandUtil_V3.getAdminCode
                   - last command seems to set some random passwords `CommandUtil_V3::initPasswords`. After that `CommandUtil_V3::controlRemoteUnlock` and then `CommandUtil::operateFinished`
                   - a last check is being run `CommandUtil.readDeviceInfo` which starts another chain of commands to get more information about the device ending with finally calling `onInitLockSuccess`
                     - DeviceInfoType.MODEL_NUMBER -> modelNum
@@ -136,16 +136,16 @@ TTLockClient.getDefault().initLock(device, new InitLockCallback() {
 ```
 
 Lock features:
+0, PASSCODE
 1, IC (card)
 2, FINGER_PRINT
-3, WRIST_BAND
+4, AUTO_LOCK
 5, PASSCODE_WITH_DELETE_FUNCTION
 6, FIRMWARE_SETTTING
 7, MODIFY_PASSCODE_FUNCTION
 8, MANUAL_LOCK
-9, PASSWORD_DISPLAY_OR_HIDE
-13, MAGNETOMETER
+12, CYCLIC_PASSWORD
+14, CONFIG_GATEWAY_UNLOCK
 15, AUDIO_MANAGEMENT
-16, NB_LOCK
-19, HOTEL_LOCK
-23, PASSAGE_MODE_AND_AUTO_LOCK_AND_CAN_CLOSE
+18, GET_ADMIN_CODE
+22, PASSAGE_MODE
