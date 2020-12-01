@@ -14,7 +14,7 @@ export class InitPasswordsCommand extends Command {
   protected pwdInfo?: CodeSecret[];
 
   protected processData(): void {
-    throw new Error("Method not implemented.");
+    // nothing to do here
   }
 
   build(): Buffer {
@@ -55,7 +55,7 @@ export class InitPasswordsCommand extends Command {
 
   private combineCodeSecret(code: number, secret: string): Buffer {
     const res = Buffer.alloc(6);
-    res[0] = code >> 4; console.log(res[0]);
+    res[0] = code >> 4;
     res[1] = code << 4;
     const bigSec = BigInt(secret);
     const sec = Buffer.alloc(8);

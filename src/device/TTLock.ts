@@ -71,13 +71,19 @@ export class TTLock {
 
     try {
       // Get AES key
+      console.log("========= AES key");
       const aesKey = await this.getAESKeyCommand();
+      console.log("========= AES key:", aesKey);
 
       // Add admin
+      console.log("========= admin");
       const admin = await this.addAdminCommand(aesKey);
+      console.log("========= admin:", admin);
 
       // Calibrate time
+      console.log("========= time");
       await this.calibrateTimeCommand(aesKey);
+      console.log("========= time");
 
       // Search device features
       const featureList = await this.searchDeviceFeatureCommand(aesKey);
@@ -95,42 +101,52 @@ export class TTLock {
       if (featureList.has(FeatureValue.RESET_BUTTON)
         || featureList.has(FeatureValue.TAMPER_ALERT)
         || featureList.has(FeatureValue.PRIVACK_LOCK)) {
+        console.log("========= switchState");
         switchState = await this.getSwitchStateCommand(undefined, aesKey);
-        console.log("switchState", switchState);
+        console.log("========= switchState:", switchState);
       }
       if (featureList.has(FeatureValue.AUDIO_MANAGEMENT)) {
+        console.log("========= lockSound");
         lockSound = await this.audioManageCommand(undefined, aesKey);
-        console.log("lockSound", lockSound);
+        console.log("========= lockSound:", lockSound);
       }
       if (featureList.has(FeatureValue.PASSWORD_DISPLAY_OR_HIDE)) {
+        console.log("========= displayPasscode");
         displayPasscode = await this.screenPasscodeManageCommand(undefined, aesKey);
-        console.log("displayPasscode", displayPasscode);
+        console.log("========= displayPasscode:", displayPasscode);
       }
       if (featureList.has(FeatureValue.AUTO_LOCK)) {
+        console.log("========= autoLockTime");
         autoLockTime = await this.searchAutoLockTimeCommand(undefined, aesKey);
-        console.log("autoLockTime", autoLockTime);
+        console.log("========= autoLockTime:", autoLockTime);
       }
       if (featureList.has(FeatureValue.LAMP)) {
+        console.log("========= lightingTime");
         lightingTime = await this.controlLampCommand(undefined, aesKey);
-        console.log("lightingTime", lightingTime);
+        console.log("========= lightingTime:", lightingTime);
       }
       if (featureList.has(FeatureValue.GET_ADMIN_CODE)) {
         // Command.COMM_GET_ADMIN_CODE
       } else if (this.device.lockType == LockType.LOCK_TYPE_V3_CAR) {
         // Command.COMM_GET_ALARM_ERRCORD_OR_OPERATION_FINISHED
       } else if (this.device.lockType == LockType.LOCK_TYPE_V3) {
+        console.log("========= adminPasscode");
         adminPasscode = await this.setAdminKeyboardPwdCommand(undefined, aesKey);
-        console.log("adminPasscode", adminPasscode);
+        console.log("========= adminPasscode:", adminPasscode);
+        console.log("========= pwdInfo");
         pwdInfo = await this.initPasswordsCommand(aesKey);
-        console.log("pwdInfo", pwdInfo);
+        console.log("========= pwdInfo:", pwdInfo);
       }
 
       if (featureList.has(FeatureValue.CONFIG_GATEWAY_UNLOCK)) {
+        console.log("========= remoteUnlock");
         remoteUnlock = await this.controlRemoteUnlockCommand(ConfigRemoteUnlock.OP_CLOSE, aesKey);
-        console.log("remoteUnlock", remoteUnlock);
+        console.log("========= remoteUnlock:", remoteUnlock);
       }
 
+      console.log("========= finished");
       await this.operateFinishedCommand(aesKey);
+      console.log("========= finished");
 
       // save all the data we gathered during init sequence
       if (aesKey) this.privateData.aesKey = aesKey;
@@ -146,7 +162,9 @@ export class TTLock {
       if (remoteUnlock) this.remoteUnlock = remoteUnlock;
 
       // read device information
+      console.log("========= device info");
       this.deviceInfo = await this.readAllDeviceInfo(aesKey);
+      console.log("========= device info:", this.deviceInfo);
 
     } catch (error) {
       console.error("Error while initialising lock", error);
@@ -177,7 +195,6 @@ export class TTLock {
         const command = cmd as AESKeyCommand;
         const aesKey = command.getAESKey();
         if (aesKey) {
-          console.log("Got AES key", aesKey.toString("hex"));
           return aesKey;
         } else {
           throw new Error("Unable to getAESKey");
