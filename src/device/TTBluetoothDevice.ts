@@ -178,6 +178,7 @@ export class TTBluetoothDevice extends TTDevice implements TTBluetoothDevice {
             this.emit("dataReceived", command);
           }
         } catch (error) {
+          // TODO: in case of a malformed response we should notify the waiting cycle and stop waiting
           console.error(error);
         }
         this.incomingDataBuffer = Buffer.from([]);
