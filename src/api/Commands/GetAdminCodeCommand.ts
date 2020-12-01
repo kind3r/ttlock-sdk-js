@@ -5,7 +5,7 @@ import { Command } from "../Command";
 
 export class GetAdminCodeCommand extends Command {
   static COMMAND_TYPE: CommandType = CommandType.COMM_GET_ADMIN_CODE;
-  
+
   private adminPasscode?: string;
 
   protected processData(): void {
@@ -14,7 +14,7 @@ export class GetAdminCodeCommand extends Command {
       if (len != this.commandData.length - 1) {
         console.error("GetAdminCodeCommand: data size (" + this.commandData.length + ") does not match declared length(" + len + ")");
       }
-      this.adminPasscode = this.commandData.subarray(1).toString();
+      this.adminPasscode = this.commandData.subarray(1, this.commandData.length - 1).toString();
     }
   }
 

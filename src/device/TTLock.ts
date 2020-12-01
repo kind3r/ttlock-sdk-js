@@ -132,18 +132,18 @@ export class TTLock {
         // Command.COMM_GET_ADMIN_CODE
         console.log("========= getAdminCode");
         adminPasscode = await this.getAdminCodeCommand(aesKey);
-        console.log("========= getAdminCode");
+        console.log("========= getAdminCode", adminPasscode);
         if (adminPasscode == "") {
-          console.log("========= adminPasscode");
+          console.log("========= set adminPasscode");
           adminPasscode = await this.setAdminKeyboardPwdCommand(undefined, aesKey);
-          console.log("========= adminPasscode:", adminPasscode);
+          console.log("========= set adminPasscode:", adminPasscode);
         }
       } else if (this.device.lockType == LockType.LOCK_TYPE_V3_CAR) {
         // Command.COMM_GET_ALARM_ERRCORD_OR_OPERATION_FINISHED
       } else if (this.device.lockType == LockType.LOCK_TYPE_V3) {
-        console.log("========= adminPasscode");
+        console.log("========= set adminPasscode");
         adminPasscode = await this.setAdminKeyboardPwdCommand(undefined, aesKey);
-        console.log("========= adminPasscode:", adminPasscode);
+        console.log("========= set adminPasscode:", adminPasscode);
         console.log("========= pwdInfo");
         pwdInfo = await this.initPasswordsCommand(aesKey);
         console.log("========= pwdInfo:", pwdInfo);
@@ -236,7 +236,7 @@ export class TTLock {
       adminPs: addAdminCommand.setAdminPs(),
       unlockKey: addAdminCommand.setUnlockKey(),
     }
-    console.log("Setting adminPassword", admin.adminPs, "and unlockNumber", admin.unlockKey);
+    console.log("Setting adminPs", admin.adminPs, "and unlockKey", admin.unlockKey);
     const responseEnvelope = await this.device.sendCommand(requestEnvelope);
     if (responseEnvelope) {
       responseEnvelope.setAesKey(aesKey);
