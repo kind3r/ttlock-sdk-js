@@ -86,7 +86,9 @@ export class TTLock {
       console.log("========= time");
 
       // Search device features
+      console.log("========= feature list");
       const featureList = await this.searchDeviceFeatureCommand(aesKey);
+      console.log("========= feature list", featureList);
 
       let switchState: any,
         lockSound: AudioManage.TURN_ON | AudioManage.TURN_OFF | undefined,

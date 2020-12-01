@@ -17,10 +17,8 @@ export class DeviceFeaturesCommand extends Command {
     this.special = this.commandData?.readInt32BE(1);
     console.log(this.commandData);
     const features = this.commandData?.readInt32BE(1);
-    console.log("Got features: ", features, "from", this.commandData?.subarray(1));
     if (features) {
       this.featureList = this.processFeatures(features);
-      console.log("Feature list:", this.featureList);
     }
   }
 
