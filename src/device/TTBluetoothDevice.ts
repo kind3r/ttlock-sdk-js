@@ -132,7 +132,7 @@ export class TTBluetoothDevice extends TTDevice implements TTBluetoothDevice {
           do {
             const remaining = data.length - index;
             await characteristic?.write(data.subarray(index, index + Math.min(MTU, remaining)), true);
-            await sleep(50);
+            await sleep(100);
             index += MTU;
           } while (index < data.length);
         }

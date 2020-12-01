@@ -11,15 +11,15 @@ export class AutoLockManageCommand extends Command {
   private opValue?: number;
   
   protected processData(): void {
-    if (this.commandData) {
-      // 2 - battery
-      // 3 - opType
-      // 4,5 - opValue
-      // 6,7 - min value
-      // 8,9 - max value
-      this.opType = this.commandData?.readUInt8(3);
+    if (this.commandData && this.commandData.length >= 4) {
+      // 0 - battery
+      // 1 - opType
+      // 2,3 - opValue
+      // 4,5 - min value
+      // 6,7 - max value
+      this.opType = this.commandData?.readUInt8(1);
       if (this.opType == AutoLockOperate.SEARCH) {
-        this.opValue = this.commandData.readUInt16BE(4);
+        this.opValue = this.commandData.readUInt16BE(2);
       } else {
 
       }
