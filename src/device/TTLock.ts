@@ -235,7 +235,7 @@ export class TTLock {
     }
     const requestEnvelope = CommandEnvelope.createFromLockType(this.device.lockType, aesKey);
     requestEnvelope.setCommandType(CommandType.COMM_TIME_CALIBRATE);
-    const responseEnvelope = await this.device.sendCommand(requestEnvelope);
+    const responseEnvelope = await this.device.sendCommand(requestEnvelope, true, true);
     if (responseEnvelope) {
       responseEnvelope.setAesKey(aesKey);
       const cmd = responseEnvelope.getCommand();

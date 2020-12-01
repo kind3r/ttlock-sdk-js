@@ -28,7 +28,7 @@ export class CommandEnvelope {
    * Create a command from raw data usually received from characteristic change
    * @param rawData 
    */
-  static createFromRawData(rawData: Buffer, aesKey?: Buffer): CommandEnvelope {
+  static createFromRawData(rawData: Buffer, aesKey?: Buffer, ignoreCrc: boolean = false): CommandEnvelope {
     const command = new CommandEnvelope();
     if (rawData.length < 7) {
       throw new Error("Data too short");
@@ -63,11 +63,15 @@ export class CommandEnvelope {
       }
       command.data = rawData.subarray(6, 6 + length);
     }
-    // const crc = CodecUtils.crccompute(rawData.slice(0, rawData.length - 1));
-    // console.log(rawData.readUInt8(rawData.length - 1), crc);
     // check CRC
-    if (rawData.readUInt8(rawData.length - 1) != CodecUtils.crccompute(rawData.slice(0, rawData.length - 1))) {
-      throw new Error("CRC error (" + rawData.readUInt8(rawData.length - 1) + " != " + CodecUtils.crccompute(rawData.slice(0, rawData.length - 1)) + ")");
+    const crc = CodecUtils.crccompute(rawData.slice(0, rawData.length - 1));
+    const dataCrc = rawData.readUInt8(rawData.length - 1);
+    if (dataCrc != crc) {
+      if (ignoreCrc) {
+        // ignore CRC errors on COMM_TIME_CALIBRATE
+      } else {
+        throw new Error("CRC error (data: " + dataCrc.toString(16) + " != computed: " + crc.toString(16) + ")");
+      }
     }
     command.generateLockType();
 

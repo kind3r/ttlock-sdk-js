@@ -98,7 +98,7 @@ TTLockClient.getDefault().stopBTService();
                 - response is `Command.COMM_RESPONSE`
                 - command is `Command.COMM_ADD_ADMIN`
                 - check if data == `SCIENER`
-                - `CommandUtil.C_calibationTime` with time in ms and timezone
+                - `CommandUtil.C_calibationTime` with time in ms and timezone. The response of this returns a bad CRC
                 - `BluetoothImpl::initLock`
                   - `CommandUtil.searchDeviceFeature`
                   - `BluetoothImpl::genCommandQue` Depending on the features, extra commands are ran agains the lock

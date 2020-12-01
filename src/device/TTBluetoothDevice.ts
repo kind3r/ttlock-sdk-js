@@ -20,6 +20,7 @@ export class TTBluetoothDevice extends TTDevice implements TTBluetoothDevice {
   connected: boolean = false;
   incomingDataBuffer: Buffer = Buffer.from([]);
   private waitingForResponse: boolean = false;
+  private ignoreCrcOnNextResponse: boolean = false;
   private responses: CommandEnvelope[] = [];
 
   private constructor() {
@@ -103,7 +104,7 @@ export class TTBluetoothDevice extends TTDevice implements TTBluetoothDevice {
     }
   }
 
-  async sendCommand(command: CommandEnvelope, waitForResponse: boolean = true): Promise<CommandEnvelope | void> {
+  async sendCommand(command: CommandEnvelope, waitForResponse: boolean = true, ignoreCrc: boolean = false): Promise<CommandEnvelope | void> {
     if (this.waitingForResponse) {
       throw new Error("Command already in progress");
     }
@@ -125,6 +126,7 @@ export class TTBluetoothDevice extends TTDevice implements TTBluetoothDevice {
           let index = 0;
           if (waitForResponse) {
             this.waitingForResponse = true;
+            this.ignoreCrcOnNextResponse = ignoreCrc;
           }
           console.log("Sending command:", data.toString("hex"));
           do {
@@ -143,6 +145,7 @@ export class TTBluetoothDevice extends TTDevice implements TTBluetoothDevice {
             await sleep(100);
           }
           this.waitingForResponse = false;
+          this.ignoreCrcOnNextResponse = false;
           console.log("Waited for a response for", cycles, "=", cycles * 100, "ms");
           const response = this.responses.pop();
           if (this.responses.length > 0) {
@@ -168,7 +171,7 @@ export class TTBluetoothDevice extends TTDevice implements TTBluetoothDevice {
       if (ending.toString("hex") == CRLF) {
         // we have a command response
         try {
-          const command = CommandEnvelope.createFromRawData(this.incomingDataBuffer.subarray(0, this.incomingDataBuffer.length - 2));
+          const command = CommandEnvelope.createFromRawData(this.incomingDataBuffer.subarray(0, this.incomingDataBuffer.length - 2), undefined, this.ignoreCrcOnNextResponse);
           if (this.waitingForResponse) {
             this.responses.push(command);
           } else {
