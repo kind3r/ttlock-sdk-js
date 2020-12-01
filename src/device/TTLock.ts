@@ -5,7 +5,7 @@ import {
   AddAdminCommand, AESKeyCommand, AudioManageCommand,
   InitPasswordsCommand, ScreenPasscodeManageCommand, SetAdminKeyboardPwdCommand,
   ControlRemoteUnlockCommand, DeviceFeaturesCommand, OperateFinishedCommand,
-  ReadDeviceInfoCommand, AutoLockManageCommand
+  ReadDeviceInfoCommand, AutoLockManageCommand, GetAdminCodeCommand
 } from "../api/Commands";
 import { CodeSecret } from "../api/Commands/InitPasswordsCommand";
 import { AudioManage } from "../constant/AudioManage";
@@ -132,7 +132,13 @@ export class TTLock {
       if (featureList.has(FeatureValue.GET_ADMIN_CODE)) {
         // Command.COMM_GET_ADMIN_CODE
         console.log("========= getAdminCode");
+        adminPasscode = await this.getAdminCodeCommand(aesKey);
         console.log("========= getAdminCode");
+        if (adminPasscode == "") {
+          console.log("========= adminPasscode");
+          adminPasscode = await this.setAdminKeyboardPwdCommand(undefined, aesKey);
+          console.log("========= adminPasscode:", adminPasscode);
+        }
       } else if (this.device.lockType == LockType.LOCK_TYPE_V3_CAR) {
         // Command.COMM_GET_ALARM_ERRCORD_OR_OPERATION_FINISHED
       } else if (this.device.lockType == LockType.LOCK_TYPE_V3) {
@@ -407,6 +413,34 @@ export class TTLock {
 
   private async controlLampCommand(newValue?: any, aesKey?: Buffer): Promise<number | undefined> {
     throw new Error("Method not implemented.");
+  }
+
+  private async getAdminCodeCommand(aesKey?: Buffer): Promise<string> {
+    if (typeof aesKey == "undefined") {
+      if (this.privateData.aesKey) {
+        aesKey = this.privateData.aesKey;
+      } else {
+        throw new Error("No AES key for lock");
+      }
+    }
+    const requestEnvelope = CommandEnvelope.createFromLockType(this.device.lockType, aesKey);
+    requestEnvelope.setCommandType(CommandType.COMM_GET_ADMIN_CODE);
+    const responseEnvelope = await this.device.sendCommand(requestEnvelope);
+    if (responseEnvelope) {
+      responseEnvelope.setAesKey(aesKey);
+      const cmd = responseEnvelope.getCommand() as GetAdminCodeCommand;
+      if (cmd.getResponse() != CommandResponse.SUCCESS) {
+        throw new Error("Failed to set adminPasscode");
+      }
+      const adminPasscode = cmd.getAdminPasscode();
+      if (adminPasscode) {
+        return adminPasscode;
+      } else {
+        return "";
+      }
+    } else {
+      throw new Error("No response to get adminPasscode");
+    }
   }
 
   /**

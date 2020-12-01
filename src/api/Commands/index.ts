@@ -15,3 +15,4 @@ export { InitPasswordsCommand } from "./InitPasswordsCommand";
 export { ControlRemoteUnlockCommand } from "./ControlRemoteUnlockCommand";
 export { OperateFinishedCommand } from "./OperateFinishedCommand";
 export { ReadDeviceInfoCommand } from "./ReadDeviceInfoCommand";
+export { GetAdminCodeCommand } from "./GetAdminCodeCommand";
