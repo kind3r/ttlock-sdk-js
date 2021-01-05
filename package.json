@@ -1,0 +1,66 @@
+{
+  "name": "ttlock-sdk-js",
+  "version": "0.1.0",
+  "description": "JavaScript port of the TTLock Android SDK",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist/**/*"
+  ],
+  "scripts": {
+    "build": "rm -rf ./dist && tsc",
+    "prepare": "npm run build",
+    "init": "npm run build && node ./examples/init.js",
+    "reset": "npm run build && node ./examples/reset.js",
+    "unlock": "npm run build && node ./examples/unlock.js",
+    "lock": "npm run build && node ./examples/lock.js",
+    "status": "npm run build && node ./examples/status.js",
+    "set-passage": "npm run build && node ./examples/setPassageMode.js",
+    "get-passage": "npm run build && node ./examples/getPassageMode.js",
+    "delete-passage": "npm run build && node ./examples/deletePassageMode.js",
+    "clear-passage": "npm run build && node ./examples/clearPassageMode.js",
+    "add-passcode": "npm run build && node ./examples/addPassCode.js",
+    "update-passcode": "npm run build && node ./examples/updatePassCode.js",
+    "delete-passcode": "npm run build && node ./examples/deletePassCode.js",
+    "clear-passcodes": "npm run build && node ./examples/clearPassCodes.js",
+    "get-passcodes": "npm run build && node ./examples/getPassCodes.js",
+    "add-card": "npm run build && node ./examples/addICCard.js",
+    "get-cards": "npm run build && node ./examples/getICCards.js",
+    "clear-cards": "npm run build && node ./examples/clearICCards.js",
+    "add-fingerprint": "npm run build && node ./examples/addFR.js",
+    "get-fingerprints": "npm run build && node ./examples/getFR.js",
+    "clear-fingerprints": "npm run build && node ./examples/clearFR.js",
+    "listen": "npm run build && node ./examples/listen.js",
+    "debug-tool": "npm run build && NOBLE_REPORT_ALL_HCI_EVENTS=1 node ./tools/dedbug.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kind3r/ttlock-sdk-js.git"
+  },
+  "keywords": [
+    "ttlock",
+    "sdk",
+    "library",
+    "javascript",
+    "smartlock",
+    "smart-lock",
+    "iot",
+    "unofficial"
+  ],
+  "author": "Emanuel Posescu <kind3r@gmail.com>",
+  "license": "GPL-3.0",
+  "bugs": {
+    "url": "https://github.com/kind3r/ttlock-sdk-js/issues"
+  },
+  "homepage": "https://github.com/kind3r/ttlock-sdk-js#readme",
+  "devDependencies": {
+    "@tsconfig/node12": "^1.0.7",
+    "@types/node": "^14.14.8",
+    "tslint": "^6.1.3",
+    "typescript": "^4.0.5"
+  },
+  "dependencies": {
+    "@abandonware/noble": "^1.9.2-10",
+    "moment": "^2.29.1"
+  }
+}
