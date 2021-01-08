@@ -4,7 +4,7 @@ var WebSocket = require('ws');
 var noble = require('@abandonware/noble');
 
 var serverMode = !process.argv[2];
-var port = 0xB1e;
+var port = process.env.WEBSOCKET_PORT || 2846;
 var host = process.argv[2];
 
 var ws;
@@ -14,7 +14,7 @@ var wss;
 if (serverMode) {
   console.log('noble - ws slave - server mode');
   wss = new WebSocket.Server({
-    port: 0xB1e
+    port: port
   });
 
   wss.on('connection', function (ws_) {

@@ -16,13 +16,20 @@ async function doStuff() {
     lockData: lockData,
     scannerType: "noble",
     scannerOptions: {
-      websocketPort: 0xB1e
+      websocketHost: "127.0.0.1",
+      websocketPort: 2846
     },
     // uuids: []
   };
 
-  if (process.env.WEBSOCKET_ENABLE == 1) {
+  if (process.env.WEBSOCKET_ENABLE == "1") {
     options.scannerType = "noble-websocket";
+    if (process.env.WEBSOCKET_HOST) {
+      options.scannerOptions.websocketHost = process.env.WEBSOCKET_HOST;
+    }
+    if (process.env.WEBSOCKET_PORT) {
+      options.scannerOptions.websocketPort = process.env.WEBSOCKET_PORT;
+    }
   }
 
   const client = new TTLockClient(options);
