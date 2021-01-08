@@ -3,7 +3,12 @@
 import { EventEmitter } from "events";
 import { DeviceInterface } from "./DeviceInterface";
 
-export type ScannerType = "noble" | "node-ble" | "auto";
+export type ScannerType = "noble" | "noble-websocket";
+
+export type ScannerOptions = {
+  websocketHost?: string,
+  websocketPort?: number
+}
 
 export type ScannerStateType = "unknown" | "starting" | "scanning" | "stopping" | "stopped";
 

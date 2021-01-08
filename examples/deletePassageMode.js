@@ -12,9 +12,20 @@ async function doStuff() {
     lockData = JSON.parse(lockDataTxt);
   } catch (error) {}
 
-  const client = new TTLockClient({
-    lockData: lockData
-  });
+  let options = {
+    lockData: lockData,
+    scannerType: "noble",
+    scannerOptions: {
+      websocketPort: 0xB1e
+    },
+    // uuids: []
+  };
+
+  if (process.env.WEBSOCKET_ENABLE == 1) {
+    options.scannerType = "noble-websocket";
+  }
+
+  const client = new TTLockClient(options);
   await client.prepareBTService();
   client.startScanLock();
   console.log("Scan started");

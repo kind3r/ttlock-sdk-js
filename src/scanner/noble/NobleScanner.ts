@@ -1,7 +1,7 @@
 'use strict';
 
 import { ScannerInterface, ScannerStateType } from "../ScannerInterface";
-import noble from "@abandonware/noble";
+import nobleObj from "@abandonware/noble";
 import { EventEmitter } from "events";
 import { NobleDevice } from "./NobleDevice";
 
@@ -12,14 +12,26 @@ export class NobleScanner extends EventEmitter implements ScannerInterface {
   scannerState: ScannerStateType = "unknown";
   private nobleState: nobleStateType = "unknown";
   private devices: Set<string> = new Set();
+  protected noble?: typeof nobleObj;
 
   constructor(uuids: string[] = []) {
     super();
     this.uuids = uuids;
-    noble.on('discover', this.onNobleDiscover.bind(this));
-    noble.on('stateChange', this.onNobleStateChange.bind(this));
-    noble.on('scanStart', this.onNobleScanStart.bind(this));
-    noble.on('scanStop', this.onNobleScanStop.bind(this));
+    this.createNoble();
+    this.initNoble();
+  }
+
+  protected createNoble() {
+    this.noble = nobleObj;
+  }
+
+  protected initNoble() {
+    if (typeof this.noble != "undefined") {
+      this.noble.on('discover', this.onNobleDiscover.bind(this));
+      this.noble.on('stateChange', this.onNobleStateChange.bind(this));
+      this.noble.on('scanStart', this.onNobleScanStart.bind(this));
+      this.noble.on('scanStop', this.onNobleScanStop.bind(this));
+    }
   }
 
   getState(): ScannerStateType {
@@ -48,33 +60,37 @@ export class NobleScanner extends EventEmitter implements ScannerInterface {
 
   private async startNobleScan(): Promise<boolean> {
     try {
-      await noble.startScanningAsync(this.uuids, false);
-      this.scannerState = "scanning";
-      return true;
+      if (typeof this.noble != "undefined") {
+        await this.noble.startScanningAsync(this.uuids, false);
+        this.scannerState = "scanning";
+        return true;
+      }
     } catch (error) {
       console.error(error);
       if (this.scannerState == "starting") {
         this.scannerState = "stopped";
       }
-      return false;
     }
+    return false;
   }
 
   private async stopNobleScan(): Promise<boolean> {
     try {
-      await noble.stopScanningAsync();
-      this.scannerState = "stopped";
-      return true;
+      if (typeof this.noble != "undefined") {
+        await this.noble.stopScanningAsync();
+        this.scannerState = "stopped";
+        return true;
+      }
     } catch (error) {
       console.error(error);
       if (this.scannerState == "stopping") {
         this.scannerState = "scanning";
       }
-      return false;
     }
+    return false;
   }
 
-  private onNobleStateChange(state: nobleStateType): void {
+  protected onNobleStateChange(state: nobleStateType): void {
     this.nobleState = state;
     if (this.nobleState == "poweredOn") {
       this.emit("ready");
@@ -84,7 +100,7 @@ export class NobleScanner extends EventEmitter implements ScannerInterface {
     }
   }
 
-  private async onNobleDiscover(peripheral: noble.Peripheral): Promise<void> {
+  protected async onNobleDiscover(peripheral: nobleObj.Peripheral): Promise<void> {
     // if the device was already found, maybe advertisement has changed
     if (!this.devices.has(peripheral.id)) {
       this.devices.add(peripheral.id);
@@ -95,12 +111,12 @@ export class NobleScanner extends EventEmitter implements ScannerInterface {
     }
   }
 
-  private onNobleScanStart(): void {
+  protected onNobleScanStart(): void {
     this.scannerState = "scanning";
     this.emit("scanStart");
   }
 
-  private onNobleScanStop(): void {
+  protected onNobleScanStop(): void {
     this.scannerState = "stopped";
     this.emit("scanStop");
   }
