@@ -51,7 +51,7 @@ export class PassageModeCommand extends Command {
   }
 
   build(): Buffer {
-    if (this.opType == PassageModeOperate.QUERY) {
+    if (this.opType == PassageModeOperate.QUERY && typeof this.sequence != "undefined") {
       return Buffer.from([this.opType, this.sequence]);
     } else if (this.dataIn) {
       return Buffer.from([

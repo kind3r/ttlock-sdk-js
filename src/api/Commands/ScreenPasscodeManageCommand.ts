@@ -9,7 +9,7 @@ export class ScreenPasscodeManageCommand extends Command {
 
   private opType: ActionType.GET | ActionType.SET = ActionType.GET;
   private opValue?: 0 | 1; // lockData.displayPasscode
-  
+
   protected processData(): void {
     if (this.commandData) {
       this.opType = this.commandData.readUInt8(0);
@@ -26,11 +26,13 @@ export class ScreenPasscodeManageCommand extends Command {
   build(): Buffer {
     if (this.opType == ActionType.GET) {
       return Buffer.from([this.opType]);
-    } else {
+    } else if (this.opType == ActionType.SET && typeof this.opValue != "undefined") {
       return Buffer.from([this.opType, this.opValue]);
+    } else {
+      return Buffer.from([]);
     }
   }
-  
+
   setNewValue(opValue: 0 | 1) {
     this.opValue = opValue;
     this.opType = ActionType.SET;

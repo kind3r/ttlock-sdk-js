@@ -1,65 +1,65 @@
 'use strict';
 
 export enum CommandType {
-  COMM_INITIALIZATION = 'E',
+  COMM_INITIALIZATION = 0x45, // 'E'
   COMM_GET_AES_KEY = 0x19,
-  COMM_RESPONSE = 'T',
+  COMM_RESPONSE = 0x54, // 'T'
 
   /**
    * Add management
    */
-  COMM_ADD_ADMIN = 'V',
+  COMM_ADD_ADMIN = 0x56, // 'V'
 
   /**
    * Check the administrator
    */
-  COMM_CHECK_ADMIN = 'A',
+  COMM_CHECK_ADMIN = 0x41, // 'A'
 
   /**
    * Administrator keyboard password
    */
-  COMM_SET_ADMIN_KEYBOARD_PWD = 'S',
+  COMM_SET_ADMIN_KEYBOARD_PWD = 0x53, // 'S'
 
   /**
    * Delete password
    */
-  COMM_SET_DELETE_PWD = 'D',
+  COMM_SET_DELETE_PWD = 0x44, // 'D'
 
   /**
    * Set the lock name
    */
-  COMM_SET_LOCK_NAME = 'N',
+  COMM_SET_LOCK_NAME = 0x4E, // 'N'
 
   /**
    * Sync keyboard password
    */
-  COMM_SYN_KEYBOARD_PWD = 'I',
+  COMM_SYN_KEYBOARD_PWD = 0x49, // 'I'
 
   /**
    * Verify user time
    */
-  COMM_CHECK_USER_TIME = 'U',
+  COMM_CHECK_USER_TIME = 0x55, // 'U'
 
   /**
    * Get the parking lock alarm record (the parking lock is moved)
    * To determine the completion of operations such as adding and password
    */
-  COMM_GET_ALARM_ERRCORD_OR_OPERATION_FINISHED = 'W',
+  COMM_GET_ALARM_ERRCORD_OR_OPERATION_FINISHED = 0x57, // 'W'
 
   /**
    * Open the door
    */
-  COMM_UNLOCK = 'G',
+  COMM_UNLOCK = 0x47, // 'G'
 
   /**
    * close the door
    */
-  COMM_LOCK = 'L',
+  COMM_LOCK = 0x4C, // 'L'
 
   /**
    * Calibration time
    */
-  COMM_TIME_CALIBRATE = 'C',
+  COMM_TIME_CALIBRATE = 0x43, // 'C'
 
   /**
    * Manage keyboard password
@@ -105,7 +105,7 @@ export enum CommandType {
   /**
    * Reset lock
    */
-  COMM_RESET_LOCK = 'R',
+  COMM_RESET_LOCK = 0x52, // 'R'
 
   /**
    * Query device characteristics

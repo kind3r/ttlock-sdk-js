@@ -6,7 +6,7 @@ import { Command } from "../Command";
 
 export class ControlRemoteUnlockCommand extends Command {
   static COMMAND_TYPE: CommandType = CommandType.COMM_CONTROL_REMOTE_UNLOCK;
-  
+
   private opType: ConfigRemoteUnlock.OP_TYPE_SEARCH | ConfigRemoteUnlock.OP_TYPE_MODIFY = ConfigRemoteUnlock.OP_TYPE_SEARCH;
   private opValue?: ConfigRemoteUnlock.OP_CLOSE | ConfigRemoteUnlock.OP_OPEN;
 
@@ -22,8 +22,10 @@ export class ControlRemoteUnlockCommand extends Command {
   build(): Buffer {
     if (this.opType == ConfigRemoteUnlock.OP_TYPE_SEARCH) {
       return Buffer.from([this.opType]);
-    } else {
+    } else if (this.opType == ConfigRemoteUnlock.OP_TYPE_MODIFY && typeof this.opValue != "undefined") {
       return Buffer.from([this.opType, this.opValue]);
+    } else {
+      return Buffer.from([]);
     }
   }
 

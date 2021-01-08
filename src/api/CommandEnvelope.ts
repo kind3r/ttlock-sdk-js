@@ -151,9 +151,9 @@ export class CommandEnvelope {
   }
 
   setCommandType(command: CommandType) {
-    if (typeof command == "string") {
-      command = command.charCodeAt(0);
-    }
+    // if (typeof command == "string") {
+    //   command = command.charCodeAt(0);
+    // }
     this.commandType = command;
     // this.generateCommand();
   }

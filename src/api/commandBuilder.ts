@@ -8,17 +8,17 @@ import * as commands from "./Commands";
 
 function getCommandClass(commandType: CommandType): CommandInterface | void {
   let commandTypeInt = commandType;
-  if (typeof commandTypeInt == "string") {
-    commandTypeInt = commandTypeInt.charCodeAt(0);
-  }
+  // if (typeof commandTypeInt == "string") {
+  //   commandTypeInt = commandTypeInt.charCodeAt(0);
+  // }
   const classNames = Object.keys(commands);
   for (let i = 0; i < classNames.length; i++) {
     if (classNames[i] != "UnknownCommand") {
       const commandClass: CommandInterface = Reflect.get(commands, classNames[i]);
       let cmdTypeInt = commandClass.COMMAND_TYPE;
-      if (typeof cmdTypeInt == 'string') {
-        cmdTypeInt = cmdTypeInt.charCodeAt(0);
-      }
+      // if (typeof cmdTypeInt == 'string') {
+      //   cmdTypeInt = cmdTypeInt.charCodeAt(0);
+      // }
       if (cmdTypeInt == commandTypeInt) {
         return commandClass;
       }
