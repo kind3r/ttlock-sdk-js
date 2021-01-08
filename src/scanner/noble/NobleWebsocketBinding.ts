@@ -80,7 +80,9 @@ export class NobleWebsocketBinding extends EventEmitter {
   }
 
   private onMessage(event: WsEvent) {
-    console.log('receive:', event);
+    if (process.env.WEBSOCKET_DEBUG == "1") {
+      console.log('receive:', event);
+    }
     let {
       type,
       peripheralUuid,
