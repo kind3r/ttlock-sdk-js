@@ -50,7 +50,7 @@ export interface FingerprintResponse {
 }
 
 export abstract class TTLockApi extends EventEmitter {
-  protected initialized: boolean = false;
+  protected initialized: boolean;
   protected device: TTBluetoothDevice;
 
   // discoverable stuff
