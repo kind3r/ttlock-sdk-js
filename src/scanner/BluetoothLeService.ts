@@ -27,7 +27,12 @@ export class BluetoothLeService extends EventEmitter implements BluetoothLeServi
     if (scannerType == "noble") {
       this.scanner = new NobleScanner(uuids);
     } else if (scannerType == "noble-websocket") {
-      this.scanner = new NobleScannerWebsocket(uuids, scannerOptions.websocketHost, scannerOptions.websocketPort);
+      this.scanner = new NobleScannerWebsocket(uuids, 
+        scannerOptions.websocketHost, 
+        scannerOptions.websocketPort,
+        scannerOptions.websocketAesKey,
+        scannerOptions.websocketUsername,
+        scannerOptions.websocketPassword);
     } else {
       throw "Invalid parameters";
     }

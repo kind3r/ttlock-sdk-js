@@ -1,89 +1,103 @@
-/* jshint loopfunc: true */
 var WebSocket = require('ws');
+var CryptoJS = require("crypto-js");
+
+const aesKey = process.env.WEBSOCKET_KEY || "f8b55c272eb007f501560839be1f1e7e";
+const credentials = process.env.WEBSOCKET_CREDENTIALS || "admin:admin";
 
 var noble = require('@abandonware/noble');
 
-var serverMode = !process.argv[2];
-var port = process.env.WEBSOCKET_PORT || 2846;
-var host = process.argv[2];
-
-var ws;
 /** @type {WebSocket.Server} */
 var wss;
 
-if (serverMode) {
-  console.log('noble - ws slave - server mode');
-  wss = new WebSocket.Server({
-    port: port
-  });
+console.log('noble - ws slave - server mode');
+wss = new WebSocket.Server({
+  port: process.env.WEBSOCKET_PORT || 2846
+});
 
-  wss.on('connection', function (ws_) {
-    console.log('ws -> connection');
+wss.on('connection', function (ws) {
+  console.log('ws -> connection');
 
-    ws = ws_;
+  ws.isAuthenticated = false;
+  const authChallenge = Buffer.alloc(16);
+  for (let i = 0 ; i < 16 ; i++) {
+    authChallenge.writeUInt8(Math.round(Math.random() * 255), i);
+  }
+  ws.authChallenge = authChallenge.toString('hex');
 
-    ws.on('message', onMessage);
-
-    ws.on('close', function () {
-      console.log('ws -> close');
-      noble.stopScanning();
-    });
-
-    noble.on('stateChange', function (state) {
-      sendEvent({
-        type: 'stateChange',
-        state: state
-      });
-    });
-
-    // Send poweredOn if already in this state.
-    if (noble.state === 'poweredOn') {
-      sendEvent({
-        type: 'stateChange',
-        state: 'poweredOn'
-      });
-    }
-  });
-} else {
-  ws = new WebSocket('ws://' + host + ':' + port);
-
-  ws.on('open', function () {
-    console.log('ws -> open');
-  });
-
-  ws.on('message', function (message) {
-    onMessage(message);
+  ws.on('message', (message) => {
+    onMessage(ws, message);
   });
 
   ws.on('close', function () {
     console.log('ws -> close');
-
     noble.stopScanning();
   });
-}
+
+  sendEvent({
+    type: 'auth',
+    challenge: ws.authChallenge
+  });
+});
 
 var peripherals = {};
 
 // TODO: open/close ws on state change
 
-function sendEvent (event) {
+function sendEvent(event) {
   var message = JSON.stringify(event);
 
   console.log('ws -> send: ' + message);
 
-  var clients = serverMode ? wss.clients : new Set([ws]);
-
-  for (let client of clients) {
-    client.send(message);
+  for (let client of wss.clients) {
+    if (client.isAuthenticated || event.type == "auth") {
+      client.send(message);
+    }
   }
 }
 
-var onMessage = function (message) {
+var onMessage = function (ws, message) {
   console.log('ws -> message: ' + message);
 
-  var command = JSON.parse(message);
+  var command;
+  try {
+    command = JSON.parse(message);
+  } catch (error) {
+    console.log(error);
+    return;
+  }
 
   var action = command.action;
+
+  if (ws.isAuthenticated == false) {
+    if (action == "auth") {
+      if (command.response) {
+        // check the authentication
+        try {
+          const response = CryptoJS.AES.decrypt(command.response, CryptoJS.enc.Hex.parse(aesKey), {
+            iv: CryptoJS.enc.Hex.parse(ws.authChallenge),
+            format: CryptoJS.format.Hex,
+            mode: CryptoJS.mode.CBC,
+            padding: CryptoJS.pad.ZeroPadding
+          });
+          if (response.toString(CryptoJS.enc.Utf8) == credentials) {
+            ws.isAuthenticated = true;
+            // Send poweredOn if already in this state.
+            if (noble.state === 'poweredOn') {
+              sendEvent({
+                type: 'stateChange',
+                state: 'poweredOn'
+              });
+            }
+          }
+        } catch (error) {
+          console.error(error);
+        }
+      }
+    }
+
+    return;
+  }
+
   var peripheralUuid = command.peripheralUuid;
   var serviceUuids = command.serviceUuids;
   var serviceUuid = command.serviceUuid;
@@ -170,6 +184,13 @@ var onMessage = function (message) {
     peripheral.writeHandle(handle, data, withoutResponse);
   }
 };
+
+noble.on('stateChange', function (state) {
+  sendEvent({
+    type: 'stateChange',
+    state: state
+  });
+});
 
 noble.on('discover', function (peripheral) {
   peripherals[peripheral.uuid] = peripheral;

@@ -7,7 +7,10 @@ export type ScannerType = "noble" | "noble-websocket";
 
 export type ScannerOptions = {
   websocketHost?: string,
-  websocketPort?: number
+  websocketPort?: number,
+  websocketAesKey?: string,
+  websocketUsername?: string,
+  websocketPassword?: string
 }
 
 export type ScannerStateType = "unknown" | "starting" | "scanning" | "stopping" | "stopped";

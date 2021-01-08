@@ -2,6 +2,7 @@
 
 import { EventEmitter } from "events";
 import WebSocket from "ws";
+import CryptoJS from "crypto-js";
 
 type Peripheral = {
   uuid: string,
@@ -20,6 +21,7 @@ type WsAdvertisement = {
 
 type WsEvent = {
   type: string,
+  challenge?: string,
   peripheralUuid: string,
   address: string,
   addressType: string,
@@ -43,19 +45,21 @@ export class NobleWebsocketBinding extends EventEmitter {
   private ws: WebSocket;
   private startScanCommand: any | null;
   private peripherals: Map<string, Peripheral>;
+  private aesKey: CryptoJS.lib.WordArray;
+  private credentials: string;
 
-  constructor(address: string, port: number = 0xB1e) {
+  constructor(address: string, port: number, key: string, user: string, pass: string) {
     super();
+
+    this.aesKey = CryptoJS.enc.Hex.parse(key);
+    this.credentials = user + ':' + pass;
+
     this.ws = new WebSocket(`ws://${address}:${port}`);
 
     this.startScanCommand = null;
     this.peripherals = new Map();
 
     this.on('message', this.onMessage.bind(this));
-
-    // if (!this.ws.on) {
-    //   this.ws.on = this.ws.addEventListener;
-    // }
 
     this.ws.on('open', this.onOpen.bind(this));
     this.ws.on('close', this.onClose.bind(this));
@@ -104,7 +108,22 @@ export class NobleWebsocketBinding extends EventEmitter {
     } = event;
     const data = event.data ? Buffer.from(event.data, 'hex') : null;
 
-    if (type === 'stateChange') {
+    if (type === "auth") {
+      // send authentication response
+      if (typeof event.challenge != "undefined" && event.challenge.length == 32) {
+        const challenge = CryptoJS.enc.Hex.parse(event.challenge);
+        const response = CryptoJS.AES.encrypt(this.credentials, this.aesKey, {
+          iv: challenge,
+          mode: CryptoJS.mode.CBC,
+          padding: CryptoJS.pad.ZeroPadding
+        });
+
+        this.sendCommand({
+          action: "auth",
+          response: response.toString(CryptoJS.format.Hex)
+        });
+      }
+    } else if (type === 'stateChange') {
       console.log(state);
       this.emit('stateChange', state);
     } else if (type === 'discover') {
