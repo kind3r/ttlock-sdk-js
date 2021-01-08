@@ -18,11 +18,7 @@ wss.on('connection', function (ws) {
   console.log('ws -> connection');
 
   ws.isAuthenticated = false;
-  const authChallenge = Buffer.alloc(16);
-  for (let i = 0 ; i < 16 ; i++) {
-    authChallenge.writeUInt8(Math.round(Math.random() * 255), i);
-  }
-  ws.authChallenge = authChallenge.toString('hex');
+  ws.authChallenge = CryptoJS.lib.WordArray.random(16).toString(CryptoJS.enc.Hex);
 
   ws.on('message', (message) => {
     onMessage(ws, message);
