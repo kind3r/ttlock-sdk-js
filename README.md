@@ -42,6 +42,19 @@ The goal of this project is to make a partial JavaScript port of the TTLock Andr
 - Some commands always have a bad CRC.
 - The SDK only works with locks that use the V3 protocol for communication.
 
+## Gateway option
+
+The websocket binding present in [@abandonware/noble](https://github.com/abandonware/noble) was extended with a simple authentication via AES key, user and password. This adds basic suport for using a bluetooth adapter on a remote host via a simple websocket connection. The end goal will be to run an ESP32 as a gateway (development ongoing) to extend the range of the device the SDK is running on, or maybe just use it on a device that does not even have a bluetooth adapter. A sample server is implemented in [tools/server.js](./tools/server.js). All examples in the SKD can be started in websocket mode by adding the following environment variables:
+- `WEBSOCKET_DEBUG=1`  - debug websocket messages
+- `WEBSOCKET_ENABLE=1` - this will enable websocket support
+- `WEBSOCKET_HOST=127.0.0.1` - the IP or hostname of the host running the server
+- `WEBSOCKET_PORT=2846` - the port the server is running on
+
+For example:
+```sh
+pi@raspberrypi:~/ttlock-sdk-js $ WEBSOCKET_ENABLE=1 WEBSOCKET_HOST=192.168.1.42 npm run get-cards
+```
+
 ## Sample usage of this SDK
 
 1. Clone the repo and install the dependencies `npm i`.
