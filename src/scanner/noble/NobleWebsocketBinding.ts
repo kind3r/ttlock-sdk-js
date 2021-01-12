@@ -54,7 +54,7 @@ export class NobleWebsocketBinding extends EventEmitter {
     this.aesKey = CryptoJS.enc.Hex.parse(key);
     this.credentials = user + ':' + pass;
 
-    this.ws = new WebSocket(`ws://${address}:${port}`);
+    this.ws = new WebSocket(`ws://${address}:${port}/noble`);
 
     this.startScanCommand = null;
     this.peripherals = new Map();
@@ -66,7 +66,14 @@ export class NobleWebsocketBinding extends EventEmitter {
     this.ws.on('error', this.onClose.bind(this));
 
     this.ws.on('message', (data: WebSocket.Data) => {
-      this.emit('message', JSON.parse(data.toString()));
+      try {
+        if (process.env.WEBSOCKET_DEBUG == "1") {
+          console.log("Received:", data.toString());
+        }
+        this.emit('message', JSON.parse(data.toString()));
+      } catch (error) {
+        console.error(error);
+      }
     });
   }
 
@@ -84,9 +91,6 @@ export class NobleWebsocketBinding extends EventEmitter {
   }
 
   private onMessage(event: WsEvent) {
-    if (process.env.WEBSOCKET_DEBUG == "1") {
-      console.log('receive:', event);
-    }
     let {
       type,
       peripheralUuid,
@@ -187,6 +191,10 @@ export class NobleWebsocketBinding extends EventEmitter {
         console.warn('could not send command', command, error);
         if (typeof errorCallback === 'function') {
           errorCallback(error);
+        }
+      } else {
+        if (process.env.WEBSOCKET_DEBUG == "1") {
+          console.log("Sent:", message);
         }
       }
     });
