@@ -35,7 +35,7 @@ wss.on('connection', function (ws) {
   });
 });
 
-var peripherals = {};
+var peripherals = new Map();
 
 // TODO: open/close ws on state change
 
@@ -106,7 +106,7 @@ var onMessage = function (ws, message) {
   var descriptorUuid = command.descriptorUuid;
   var handle;
 
-  var peripheral = peripherals[peripheralUuid];
+  var peripheral = peripherals.get(peripheralUuid);
   var service = null;
   var characteristic = null;
   var descriptor = null;
@@ -189,220 +189,222 @@ noble.on('stateChange', function (state) {
 });
 
 noble.on('discover', function (peripheral) {
-  peripherals[peripheral.uuid] = peripheral;
-
-  peripheral.on('connect', function () {
-    sendEvent({
-      type: 'connect',
-      peripheralUuid: this.uuid
-    });
-  });
-
-  peripheral.on('disconnect', function () {
-    sendEvent({
-      type: 'disconnect',
-      peripheralUuid: this.uuid
-    });
-
-    for (var i in this.services) {
-      for (var j in this.services[i].characteristics) {
-        for (var k in this.services[i].characteristics[j].descriptors) {
-          this.services[i].characteristics[j].descriptors[k].removeAllListeners();
-        }
-
-        this.services[i].characteristics[j].removeAllListeners();
-      }
-      this.services[i].removeAllListeners();
-    }
-
-    this.removeAllListeners();
-  });
-
-  peripheral.on('rssiUpdate', function (rssi) {
-    sendEvent({
-      type: 'rssiUpdate',
-      peripheralUuid: this.uuid,
-      rssi: rssi
-    });
-  });
-
-  peripheral.on('servicesDiscover', function (services) {
-    var peripheral = this;
-    var serviceUuids = [];
-
-    var includedServicesDiscover = function (includedServiceUuids) {
+  if (!peripherals.has(peripheral.uuid)) {
+    peripherals.set(peripheral.uuid, peripheral);
+  
+    peripheral.on('connect', function () {
       sendEvent({
-        type: 'includedServicesDiscover',
-        peripheralUuid: peripheral.uuid,
-        serviceUuid: this.uuid,
-        includedServiceUuids: includedServiceUuids
+        type: 'connect',
+        peripheralUuid: this.uuid
       });
-    };
-
-    var characteristicsDiscover = function (characteristics) {
-      var service = this;
-      var discoveredCharacteristics = [];
-
-      var read = function (data, isNotification) {
-        var characteristic = this;
-
+    });
+  
+    peripheral.on('disconnect', function () {
+      sendEvent({
+        type: 'disconnect',
+        peripheralUuid: this.uuid
+      });
+  
+      for (var i in this.services) {
+        for (var j in this.services[i].characteristics) {
+          for (var k in this.services[i].characteristics[j].descriptors) {
+            this.services[i].characteristics[j].descriptors[k].removeAllListeners();
+          }
+  
+          this.services[i].characteristics[j].removeAllListeners();
+        }
+        this.services[i].removeAllListeners();
+      }
+  
+      // this.removeAllListeners();
+    });
+  
+    peripheral.on('rssiUpdate', function (rssi) {
+      sendEvent({
+        type: 'rssiUpdate',
+        peripheralUuid: this.uuid,
+        rssi: rssi
+      });
+    });
+  
+    peripheral.on('servicesDiscover', function (services) {
+      var peripheral = this;
+      var serviceUuids = [];
+  
+      var includedServicesDiscover = function (includedServiceUuids) {
         sendEvent({
-          type: 'read',
+          type: 'includedServicesDiscover',
           peripheralUuid: peripheral.uuid,
-          serviceUuid: service.uuid,
-          characteristicUuid: characteristic.uuid,
-          data: data.toString('hex'),
-          isNotification: isNotification
+          serviceUuid: this.uuid,
+          includedServiceUuids: includedServiceUuids
         });
       };
-
-      var write = function () {
-        var characteristic = this;
-
-        sendEvent({
-          type: 'write',
-          peripheralUuid: peripheral.uuid,
-          serviceUuid: service.uuid,
-          characteristicUuid: characteristic.uuid
-        });
-      };
-
-      var broadcast = function (state) {
-        var characteristic = this;
-
-        sendEvent({
-          type: 'broadcast',
-          peripheralUuid: peripheral.uuid,
-          serviceUuid: service.uuid,
-          characteristicUuid: characteristic.uuid,
-          state: state
-        });
-      };
-
-      var notify = function (state) {
-        var characteristic = this;
-
-        sendEvent({
-          type: 'notify',
-          peripheralUuid: peripheral.uuid,
-          serviceUuid: service.uuid,
-          characteristicUuid: characteristic.uuid,
-          state: state
-        });
-      };
-
-      var descriptorsDiscover = function (descriptors) {
-        var characteristic = this;
-
-        var discoveredDescriptors = [];
-
-        var valueRead = function (data) {
-          var descriptor = this;
-
+  
+      var characteristicsDiscover = function (characteristics) {
+        var service = this;
+        var discoveredCharacteristics = [];
+  
+        var read = function (data, isNotification) {
+          var characteristic = this;
+  
           sendEvent({
-            type: 'valueRead',
+            type: 'read',
             peripheralUuid: peripheral.uuid,
             serviceUuid: service.uuid,
             characteristicUuid: characteristic.uuid,
-            descriptorUuid: descriptor.uuid,
-            data: data.toString('hex')
+            data: data.toString('hex'),
+            isNotification: isNotification
           });
         };
-
-        var valueWrite = function (data) {
-          var descriptor = this;
-
+  
+        var write = function () {
+          var characteristic = this;
+  
           sendEvent({
-            type: 'valueWrite',
+            type: 'write',
+            peripheralUuid: peripheral.uuid,
+            serviceUuid: service.uuid,
+            characteristicUuid: characteristic.uuid
+          });
+        };
+  
+        var broadcast = function (state) {
+          var characteristic = this;
+  
+          sendEvent({
+            type: 'broadcast',
             peripheralUuid: peripheral.uuid,
             serviceUuid: service.uuid,
             characteristicUuid: characteristic.uuid,
-            descriptorUuid: descriptor.uuid
+            state: state
           });
         };
-
-        for (var k in descriptors) {
-          descriptors[k].on('valueRead', valueRead);
-
-          descriptors[k].on('valueWrite', valueWrite);
-
-          discoveredDescriptors.push(descriptors[k].uuid);
+  
+        var notify = function (state) {
+          var characteristic = this;
+  
+          sendEvent({
+            type: 'notify',
+            peripheralUuid: peripheral.uuid,
+            serviceUuid: service.uuid,
+            characteristicUuid: characteristic.uuid,
+            state: state
+          });
+        };
+  
+        var descriptorsDiscover = function (descriptors) {
+          var characteristic = this;
+  
+          var discoveredDescriptors = [];
+  
+          var valueRead = function (data) {
+            var descriptor = this;
+  
+            sendEvent({
+              type: 'valueRead',
+              peripheralUuid: peripheral.uuid,
+              serviceUuid: service.uuid,
+              characteristicUuid: characteristic.uuid,
+              descriptorUuid: descriptor.uuid,
+              data: data.toString('hex')
+            });
+          };
+  
+          var valueWrite = function (data) {
+            var descriptor = this;
+  
+            sendEvent({
+              type: 'valueWrite',
+              peripheralUuid: peripheral.uuid,
+              serviceUuid: service.uuid,
+              characteristicUuid: characteristic.uuid,
+              descriptorUuid: descriptor.uuid
+            });
+          };
+  
+          for (var k in descriptors) {
+            descriptors[k].on('valueRead', valueRead);
+  
+            descriptors[k].on('valueWrite', valueWrite);
+  
+            discoveredDescriptors.push(descriptors[k].uuid);
+          }
+  
+          sendEvent({
+            type: 'descriptorsDiscover',
+            peripheralUuid: peripheral.uuid,
+            serviceUuid: service.uuid,
+            characteristicUuid: this.uuid,
+            descriptors: discoveredDescriptors
+          });
+        };
+  
+        for (var j = 0; j < characteristics.length; j++) {
+          characteristics[j].on('read', read);
+  
+          characteristics[j].on('write', write);
+  
+          characteristics[j].on('broadcast', broadcast);
+  
+          characteristics[j].on('notify', notify);
+  
+          characteristics[j].on('descriptorsDiscover', descriptorsDiscover);
+  
+          discoveredCharacteristics.push({
+            uuid: characteristics[j].uuid,
+            properties: characteristics[j].properties
+          });
         }
-
+  
         sendEvent({
-          type: 'descriptorsDiscover',
+          type: 'characteristicsDiscover',
           peripheralUuid: peripheral.uuid,
-          serviceUuid: service.uuid,
-          characteristicUuid: this.uuid,
-          descriptors: discoveredDescriptors
+          serviceUuid: this.uuid,
+          characteristics: discoveredCharacteristics
         });
       };
-
-      for (var j = 0; j < characteristics.length; j++) {
-        characteristics[j].on('read', read);
-
-        characteristics[j].on('write', write);
-
-        characteristics[j].on('broadcast', broadcast);
-
-        characteristics[j].on('notify', notify);
-
-        characteristics[j].on('descriptorsDiscover', descriptorsDiscover);
-
-        discoveredCharacteristics.push({
-          uuid: characteristics[j].uuid,
-          properties: characteristics[j].properties
-        });
+  
+      for (var i in services) {
+        services[i].on('includedServicesDiscover', includedServicesDiscover);
+  
+        services[i].on('characteristicsDiscover', characteristicsDiscover);
+  
+        serviceUuids.push(services[i].uuid);
       }
-
+  
       sendEvent({
-        type: 'characteristicsDiscover',
-        peripheralUuid: peripheral.uuid,
-        serviceUuid: this.uuid,
-        characteristics: discoveredCharacteristics
+        type: 'servicesDiscover',
+        peripheralUuid: this.uuid,
+        serviceUuids: serviceUuids
       });
-    };
-
-    for (var i in services) {
-      services[i].on('includedServicesDiscover', includedServicesDiscover);
-
-      services[i].on('characteristicsDiscover', characteristicsDiscover);
-
-      serviceUuids.push(services[i].uuid);
-    }
-
-    sendEvent({
-      type: 'servicesDiscover',
-      peripheralUuid: this.uuid,
-      serviceUuids: serviceUuids
     });
-  });
-
-  peripheral.on('handleRead', function (handle, data) {
-    sendEvent({
-      type: 'handleRead',
-      peripheralUuid: this.uuid,
-      handle: handle,
-      data: data.toString('hex')
+  
+    peripheral.on('handleRead', function (handle, data) {
+      sendEvent({
+        type: 'handleRead',
+        peripheralUuid: this.uuid,
+        handle: handle,
+        data: data.toString('hex')
+      });
     });
-  });
-
-  peripheral.on('handleWrite', function (handle) {
-    sendEvent({
-      type: 'handleWrite',
-      peripheralUuid: this.uuid,
-      handle: handle
+  
+    peripheral.on('handleWrite', function (handle) {
+      sendEvent({
+        type: 'handleWrite',
+        peripheralUuid: this.uuid,
+        handle: handle
+      });
     });
-  });
-
-  peripheral.on('handleNotify', function (handle, data) {
-    sendEvent({
-      type: 'handleNotify',
-      peripheralUuid: this.uuid,
-      handle: handle,
-      data: data.toString('hex')
+  
+    peripheral.on('handleNotify', function (handle, data) {
+      sendEvent({
+        type: 'handleNotify',
+        peripheralUuid: this.uuid,
+        handle: handle,
+        data: data.toString('hex')
+      });
     });
-  });
+  }
 
   sendEvent({
     type: 'discover',
