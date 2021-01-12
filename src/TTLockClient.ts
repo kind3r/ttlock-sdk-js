@@ -18,6 +18,7 @@ export interface Settings {
 }
 
 export interface TTLockClient {
+  on(event: "ready", listener: () => void): this;
   on(event: "foundLock", listener: (lock: TTLock) => void): this;
   on(event: "scanStart", listener: () => void): this;
   on(event: "scanStop", listener: () => void): this;
@@ -63,7 +64,7 @@ export class TTLockClient extends events.EventEmitter implements TTLockClient {
   async prepareBTService(): Promise<boolean> {
     if (this.bleService == null) {
       this.bleService = new BluetoothLeService(this.uuids, this.scannerType, this.scannerOptions);
-      this.bleService.on("ready", () => this.adapterReady = true);
+      this.bleService.on("ready", () => { this.adapterReady = true; this.emit("ready")});
       this.bleService.on("discover", this.onScanResult.bind(this));
       this.bleService.on("scanStart", () => this.emit("scanStart"));
       this.bleService.on("scanStop", () => this.emit("scanStop"));
