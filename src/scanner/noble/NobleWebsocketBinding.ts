@@ -1,6 +1,7 @@
 'use strict';
 
 import { EventEmitter } from "events";
+import ReconnectingWebSocket, { Event } from "reconnecting-websocket";
 import WebSocket from "ws";
 import CryptoJS from "crypto-js";
 
@@ -42,7 +43,7 @@ type WsEvent = {
 }
 
 export class NobleWebsocketBinding extends EventEmitter {
-  private ws: WebSocket;
+  private ws: ReconnectingWebSocket;
   private startScanCommand: any | null;
   private peripherals: Map<string, Peripheral>;
   private aesKey: CryptoJS.lib.WordArray;
@@ -54,27 +55,27 @@ export class NobleWebsocketBinding extends EventEmitter {
     this.aesKey = CryptoJS.enc.Hex.parse(key);
     this.credentials = user + ':' + pass;
 
-    this.ws = new WebSocket(`ws://${address}:${port}/noble`);
+    this.ws = new ReconnectingWebSocket(`ws://${address}:${port}/noble`, [], {WebSocket: WebSocket});
 
     this.startScanCommand = null;
     this.peripherals = new Map();
 
     this.on('message', this.onMessage.bind(this));
 
-    this.ws.on('open', this.onOpen.bind(this));
-    this.ws.on('close', this.onClose.bind(this));
-    this.ws.on('error', this.onClose.bind(this));
+    this.ws.onopen = this.onOpen.bind(this);
+    this.ws.onclose = this.onClose.bind(this);
+    this.ws.onerror = this.onClose.bind(this);
 
-    this.ws.on('message', (data: WebSocket.Data) => {
+    this.ws.onmessage = (event: any) => {
       try {
         if (process.env.WEBSOCKET_DEBUG == "1") {
-          console.log("Received:", data.toString());
+          console.log("Received:", event.data.toString());
         }
-        this.emit('message', JSON.parse(data.toString()));
+        this.emit('message', JSON.parse(event.data.toString()));
       } catch (error) {
         console.error(error);
       }
-    });
+    };
   }
 
   init() {
@@ -186,18 +187,22 @@ export class NobleWebsocketBinding extends EventEmitter {
 
   private sendCommand(command: any, errorCallback?: any) {
     const message = JSON.stringify(command);
-    this.ws.send(message, error => {
-      if (error != null) {
-        console.warn('could not send command', command, error);
-        if (typeof errorCallback === 'function') {
-          errorCallback(error);
-        }
-      } else {
-        if (process.env.WEBSOCKET_DEBUG == "1") {
-          console.log("Sent:", message);
-        }
-      }
-    });
+    this.ws.send(message);
+    if (process.env.WEBSOCKET_DEBUG == "1") {
+      console.log("Sent:", message);
+    }
+    // , error => {
+    //   if (error != null) {
+    //     console.warn('could not send command', command, error);
+    //     if (typeof errorCallback === 'function') {
+    //       errorCallback(error);
+    //     }
+    //   } else {
+    //     if (process.env.WEBSOCKET_DEBUG == "1") {
+    //       console.log("Sent:", message);
+    //     }
+    //   }
+    // });
   }
 
   startScanning(serviceUuids: string[], allowDuplicates: boolean = true) {

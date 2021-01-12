@@ -1,6 +1,6 @@
 {
   "name": "ttlock-sdk-js",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "JavaScript port of the TTLock Android SDK",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -66,6 +66,7 @@
     "@abandonware/noble": "^1.9.2-10",
     "crypto-js": "^4.0.0",
     "moment": "^2.29.1",
+    "reconnecting-websocket": "^4.4.0",
     "ws": "^7.4.2"
   }
 }
