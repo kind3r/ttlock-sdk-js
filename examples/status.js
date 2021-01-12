@@ -12,9 +12,27 @@ async function doStuff() {
     lockData = JSON.parse(lockDataTxt);
   } catch (error) {}
 
-  const client = new TTLockClient({
-    lockData: lockData
-  });
+  let options = {
+    lockData: lockData,
+    scannerType: "noble",
+    scannerOptions: {
+      websocketHost: "127.0.0.1",
+      websocketPort: 2846
+    },
+    // uuids: []
+  };
+
+  if (process.env.WEBSOCKET_ENABLE == "1") {
+    options.scannerType = "noble-websocket";
+    if (process.env.WEBSOCKET_HOST) {
+      options.scannerOptions.websocketHost = process.env.WEBSOCKET_HOST;
+    }
+    if (process.env.WEBSOCKET_PORT) {
+      options.scannerOptions.websocketPort = process.env.WEBSOCKET_PORT;
+    }
+  }
+
+  const client = new TTLockClient(options);
   await client.prepareBTService();
   client.startScanLock();
   console.log("Scan started");
@@ -29,7 +47,11 @@ async function doStuff() {
       console.log();
       const result = await lock.getLockStatus();
       if (result != -1) {
-        console.log("Lock is locked", result);
+        if (result == 0) {
+          console.log("Lock is locked", result);
+        } else {
+          console.log("Lock is unlocked", result);
+        }
       } else {
         console.log("Failed to get lock status");
       }

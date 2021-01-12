@@ -12,9 +12,27 @@ async function doStuff() {
     lockData = JSON.parse(lockDataTxt);
   } catch (error) {}
 
-  const client = new TTLockClient({
-    lockData: lockData
-  });
+  let options = {
+    lockData: lockData,
+    scannerType: "noble",
+    scannerOptions: {
+      websocketHost: "127.0.0.1",
+      websocketPort: 2846
+    },
+    // uuids: []
+  };
+
+  if (process.env.WEBSOCKET_ENABLE == "1") {
+    options.scannerType = "noble-websocket";
+    if (process.env.WEBSOCKET_HOST) {
+      options.scannerOptions.websocketHost = process.env.WEBSOCKET_HOST;
+    }
+    if (process.env.WEBSOCKET_PORT) {
+      options.scannerOptions.websocketPort = process.env.WEBSOCKET_PORT;
+    }
+  }
+
+  const client = new TTLockClient(options);
   await client.prepareBTService();
   for (let i = 10; i > 0; i--) {
     console.log("Starting scan...", i);

@@ -6,12 +6,14 @@ import { TTBluetoothDevice } from "./device/TTBluetoothDevice";
 import { TTLock } from "./device/TTLock";
 
 import { BluetoothLeService, TTLockUUIDs, ScannerType } from "./scanner/BluetoothLeService";
+import { ScannerOptions } from "./scanner/ScannerInterface";
 import { TTLockData } from "./store/TTLockData";
 import { sleep } from "./util/timingUtil";
 
 export interface Settings {
   uuids?: string[];
   scannerType?: ScannerType;
+  scannerOptions?: ScannerOptions;
   lockData?: TTLockData[];
 }
 
@@ -25,6 +27,7 @@ export class TTLockClient extends events.EventEmitter implements TTLockClient {
   bleService: BluetoothLeService | null = null;
   uuids: string[];
   scannerType: ScannerType = "noble";
+  scannerOptions: ScannerOptions;
   lockData: Map<string, TTLockData>;
   private adapterReady: boolean;
 
@@ -39,8 +42,14 @@ export class TTLockClient extends events.EventEmitter implements TTLockClient {
       this.uuids = TTLockUUIDs;
     }
 
-    if (options.scannerType) {
+    if (typeof options.scannerType != "undefined") {
       this.scannerType = options.scannerType;
+    }
+
+    if (typeof options.scannerOptions != "undefined") {
+      this.scannerOptions = options.scannerOptions;
+    } else {
+      this.scannerOptions = {};
     }
 
     this.lockData = new Map();
@@ -53,7 +62,7 @@ export class TTLockClient extends events.EventEmitter implements TTLockClient {
 
   async prepareBTService(): Promise<boolean> {
     if (this.bleService == null) {
-      this.bleService = new BluetoothLeService(this.uuids, this.scannerType);
+      this.bleService = new BluetoothLeService(this.uuids, this.scannerType, this.scannerOptions);
       this.bleService.on("ready", () => this.adapterReady = true);
       this.bleService.on("discover", this.onScanResult.bind(this));
       this.bleService.on("scanStart", () => this.emit("scanStart"));

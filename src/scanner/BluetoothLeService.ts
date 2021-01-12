@@ -1,10 +1,11 @@
 'use strict';
 
 import { EventEmitter } from "events";
-import { ScannerInterface, ScannerType } from "./ScannerInterface";
+import { ScannerInterface, ScannerOptions, ScannerType } from "./ScannerInterface";
 import { NobleScanner } from "./noble/NobleScanner";
 import { TTBluetoothDevice } from "../device/TTBluetoothDevice";
 import { DeviceInterface } from "./DeviceInterface";
+import { NobleScannerWebsocket } from "./noble/NobleScannerWebsocket";
 
 export { ScannerType } from "./ScannerInterface";
 export const TTLockUUIDs: string[] = ["1910", "00001910-0000-1000-8000-00805f9b34fb"];
@@ -20,21 +21,25 @@ export class BluetoothLeService extends EventEmitter implements BluetoothLeServi
   private scanner: ScannerInterface;
   private devices: Map<string, TTBluetoothDevice>;
 
-  constructor(uuids: string[] = TTLockUUIDs, scannerType: ScannerType = "auto") {
+  constructor(uuids: string[] = TTLockUUIDs, scannerType: ScannerType = "noble", scannerOptions: ScannerOptions) {
     super();
     this.devices = new Map();
-    if (scannerType == "auto") {
-      scannerType = "noble";
-    }
     if (scannerType == "noble") {
       this.scanner = new NobleScanner(uuids);
-      this.scanner.on("ready", () => this.emit("ready"));
-      this.scanner.on("discover", this.onDiscover.bind(this));
-      this.scanner.on("scanStart", () => this.emit("scanStart"));
-      this.scanner.on("scanStop", () => this.emit("scanStop"));
+    } else if (scannerType == "noble-websocket") {
+      this.scanner = new NobleScannerWebsocket(uuids, 
+        scannerOptions.websocketHost, 
+        scannerOptions.websocketPort,
+        scannerOptions.websocketAesKey,
+        scannerOptions.websocketUsername,
+        scannerOptions.websocketPassword);
     } else {
       throw "Invalid parameters";
     }
+    this.scanner.on("ready", () => this.emit("ready"));
+    this.scanner.on("discover", this.onDiscover.bind(this));
+    this.scanner.on("scanStart", () => this.emit("scanStart"));
+    this.scanner.on("scanStop", () => this.emit("scanStop"));
   }
 
   async startScan(): Promise<boolean> {
