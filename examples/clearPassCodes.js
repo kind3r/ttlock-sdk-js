@@ -37,7 +37,7 @@ async function doStuff() {
   client.startScanLock();
   console.log("Scan started");
   client.on("foundLock", async (lock) => {
-    await lock.connect(true);
+    await lock.connect();
     console.log(lock.toJSON());
     console.log();
 

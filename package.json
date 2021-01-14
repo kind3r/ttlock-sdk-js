@@ -1,6 +1,6 @@
 {
   "name": "ttlock-sdk-js",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "JavaScript port of the TTLock Android SDK",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

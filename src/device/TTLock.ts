@@ -104,6 +104,34 @@ export class TTLock extends TTLockApi implements TTLock {
     }
   }
 
+  hasPassCode(): boolean {
+    if (typeof this.featureList != "undefined" && this.featureList.has(FeatureValue.PASSCODE)) {
+      return true;
+    }
+    return false;
+  }
+
+  hasICCard(): boolean {
+    if (typeof this.featureList != "undefined" && this.featureList.has(FeatureValue.IC)) {
+      return true;
+    }
+    return false;
+  }
+
+  hasFingerprint(): boolean {
+    if (typeof this.featureList != "undefined" && this.featureList.has(FeatureValue.FINGER_PRINT)) {
+      return true;
+    }
+    return false;
+  }
+
+  hasAutolock(): boolean {
+    if (typeof this.featureList != "undefined" && this.featureList.has(FeatureValue.AUTO_LOCK)) {
+      return true;
+    }
+    return false;
+  }
+
   /**
    * Initialize and pair with a new lock
    */
@@ -367,7 +395,7 @@ export class TTLock extends TTLockApi implements TTLock {
           if (!this.isConnected()) {
             throw new Error("Lock is not connected");
           }
-          
+
           try {
             if (await this.macro_adminLogin()) {
               console.log("========= autoLockTime");
@@ -558,12 +586,16 @@ export class TTLock extends TTLockApi implements TTLock {
    * @param endDate Valid to YYYYMMDDHHmm
    */
   async addPassCode(type: KeyboardPwdType, passCode: string, startDate?: string, endDate?: string): Promise<boolean> {
-    if (!this.isConnected()) {
-      throw new Error("Lock is not connected");
-    }
-
     if (!this.initialized) {
       throw new Error("Lock is in pairing mode");
+    }
+
+    if (!this.hasPassCode()) {
+      throw new Error("No PassCode support");
+    }
+
+    if (!this.isConnected()) {
+      throw new Error("Lock is not connected");
     }
 
     try {
@@ -590,12 +622,16 @@ export class TTLock extends TTLockApi implements TTLock {
    * @param endDate Valid to YYYYMMDDHHmm
    */
   async updatePassCode(type: KeyboardPwdType, oldPassCode: string, newPassCode: string, startDate?: string, endDate?: string): Promise<boolean> {
-    if (!this.isConnected()) {
-      throw new Error("Lock is not connected");
-    }
-
     if (!this.initialized) {
       throw new Error("Lock is in pairing mode");
+    }
+
+    if (!this.hasPassCode()) {
+      throw new Error("No PassCode support");
+    }
+
+    if (!this.isConnected()) {
+      throw new Error("Lock is not connected");
     }
 
     try {
@@ -619,12 +655,16 @@ export class TTLock extends TTLockApi implements TTLock {
    * @param passCode 4-9 digits code
    */
   async deletePassCode(type: KeyboardPwdType, passCode: string): Promise<boolean> {
-    if (!this.isConnected()) {
-      throw new Error("Lock is not connected");
-    }
-
     if (!this.initialized) {
       throw new Error("Lock is in pairing mode");
+    }
+
+    if (!this.hasPassCode()) {
+      throw new Error("No PassCode support");
+    }
+
+    if (!this.isConnected()) {
+      throw new Error("Lock is not connected");
     }
 
     try {
@@ -646,12 +686,16 @@ export class TTLock extends TTLockApi implements TTLock {
    * Remove all stored passcodes
    */
   async clearPassCodes(): Promise<boolean> {
-    if (!this.isConnected()) {
-      throw new Error("Lock is not connected");
-    }
-
     if (!this.initialized) {
       throw new Error("Lock is in pairing mode");
+    }
+
+    if (!this.hasPassCode()) {
+      throw new Error("No PassCode support");
+    }
+
+    if (!this.isConnected()) {
+      throw new Error("Lock is not connected");
     }
 
     try {
@@ -673,12 +717,16 @@ export class TTLock extends TTLockApi implements TTLock {
    * Get all valid passcodes
    */
   async getPassCodes(): Promise<KeyboardPassCode[]> {
-    if (!this.isConnected()) {
-      throw new Error("Lock is not connected");
-    }
-
     if (!this.initialized) {
       throw new Error("Lock is in pairing mode");
+    }
+
+    if (!this.hasPassCode()) {
+      throw new Error("No PassCode support");
+    }
+
+    if (!this.isConnected()) {
+      throw new Error("Lock is not connected");
     }
 
     let data: KeyboardPassCode[] = [];
@@ -710,12 +758,16 @@ export class TTLock extends TTLockApi implements TTLock {
    * @returns serial number of the card that was added
    */
   async addICCard(startDate: string, endDate: string): Promise<string> {
-    if (!this.isConnected()) {
-      throw new Error("Lock is not connected");
-    }
-
     if (!this.initialized) {
       throw new Error("Lock is in pairing mode");
+    }
+
+    if (!this.hasICCard()) {
+      throw new Error("No IC Card support");
+    }
+
+    if (!this.isConnected()) {
+      throw new Error("Lock is not connected");
     }
 
     let data = "";
@@ -743,12 +795,16 @@ export class TTLock extends TTLockApi implements TTLock {
    * @param endDate Valid to YYYYMMDDHHmm
    */
   async updateICCard(cardNumber: string, startDate: string, endDate: string): Promise<boolean> {
-    if (!this.isConnected()) {
-      throw new Error("Lock is not connected");
-    }
-
     if (!this.initialized) {
       throw new Error("Lock is in pairing mode");
+    }
+
+    if (!this.hasICCard()) {
+      throw new Error("No IC Card support");
+    }
+
+    if (!this.isConnected()) {
+      throw new Error("Lock is not connected");
     }
 
     let data = false;
@@ -772,12 +828,16 @@ export class TTLock extends TTLockApi implements TTLock {
    * @param cardNumber Serial number of the card
    */
   async deleteICCard(cardNumber: string): Promise<boolean> {
-    if (!this.isConnected()) {
-      throw new Error("Lock is not connected");
-    }
-
     if (!this.initialized) {
       throw new Error("Lock is in pairing mode");
+    }
+
+    if (!this.hasICCard()) {
+      throw new Error("No IC Card support");
+    }
+
+    if (!this.isConnected()) {
+      throw new Error("Lock is not connected");
     }
 
     let data = false;
@@ -800,12 +860,16 @@ export class TTLock extends TTLockApi implements TTLock {
    * Clear all IC Card data
    */
   async clearICCards(): Promise<boolean> {
-    if (!this.isConnected()) {
-      throw new Error("Lock is not connected");
-    }
-
     if (!this.initialized) {
       throw new Error("Lock is in pairing mode");
+    }
+
+    if (!this.hasICCard()) {
+      throw new Error("No IC Card support");
+    }
+
+    if (!this.isConnected()) {
+      throw new Error("Lock is not connected");
     }
 
     let data = false;
@@ -828,12 +892,16 @@ export class TTLock extends TTLockApi implements TTLock {
    * Get all valid IC cards and their validity interval
    */
   async getICCards(): Promise<ICCard[]> {
-    if (!this.isConnected()) {
-      throw new Error("Lock is not connected");
-    }
-
     if (!this.initialized) {
       throw new Error("Lock is in pairing mode");
+    }
+
+    if (!this.hasICCard()) {
+      throw new Error("No IC Card support");
+    }
+
+    if (!this.isConnected()) {
+      throw new Error("Lock is not connected");
     }
 
     let data: ICCard[] = [];
@@ -865,12 +933,16 @@ export class TTLock extends TTLockApi implements TTLock {
    * @returns serial number of the firngerprint that was added
    */
   async addFingerprint(startDate: string, endDate: string): Promise<string> {
-    if (!this.isConnected()) {
-      throw new Error("Lock is not connected");
-    }
-
     if (!this.initialized) {
       throw new Error("Lock is in pairing mode");
+    }
+
+    if (!this.hasFingerprint()) {
+      throw new Error("No fingerprint support");
+    }
+
+    if (!this.isConnected()) {
+      throw new Error("Lock is not connected");
     }
 
     let data = "";
@@ -898,12 +970,16 @@ export class TTLock extends TTLockApi implements TTLock {
    * @param endDate Valid to YYYYMMDDHHmm
    */
   async updateFingerprint(fpNumber: string, startDate: string, endDate: string): Promise<boolean> {
-    if (!this.isConnected()) {
-      throw new Error("Lock is not connected");
-    }
-
     if (!this.initialized) {
       throw new Error("Lock is in pairing mode");
+    }
+
+    if (!this.hasFingerprint()) {
+      throw new Error("No fingerprint support");
+    }
+
+    if (!this.isConnected()) {
+      throw new Error("Lock is not connected");
     }
 
     let data = false;
@@ -927,12 +1003,16 @@ export class TTLock extends TTLockApi implements TTLock {
    * @param fpNumber Serial number of the fingerprint
    */
   async deleteFingerprint(fpNumber: string): Promise<boolean> {
-    if (!this.isConnected()) {
-      throw new Error("Lock is not connected");
-    }
-
     if (!this.initialized) {
       throw new Error("Lock is in pairing mode");
+    }
+
+    if (!this.hasFingerprint()) {
+      throw new Error("No fingerprint support");
+    }
+
+    if (!this.isConnected()) {
+      throw new Error("Lock is not connected");
     }
 
     let data = false;
@@ -955,12 +1035,16 @@ export class TTLock extends TTLockApi implements TTLock {
    * Clear all fingerprint data
    */
   async clearFingerprints(): Promise<boolean> {
-    if (!this.isConnected()) {
-      throw new Error("Lock is not connected");
-    }
-
     if (!this.initialized) {
       throw new Error("Lock is in pairing mode");
+    }
+
+    if (!this.hasFingerprint()) {
+      throw new Error("No fingerprint support");
+    }
+
+    if (!this.isConnected()) {
+      throw new Error("Lock is not connected");
     }
 
     let data = false;
@@ -983,12 +1067,16 @@ export class TTLock extends TTLockApi implements TTLock {
    * Get all valid IC cards and their validity interval
    */
   async getFingerprints(): Promise<Fingerprint[]> {
-    if (!this.isConnected()) {
-      throw new Error("Lock is not connected");
-    }
-
     if (!this.initialized) {
       throw new Error("Lock is in pairing mode");
+    }
+
+    if (!this.hasFingerprint()) {
+      throw new Error("No fingerprint support");
+    }
+
+    if (!this.isConnected()) {
+      throw new Error("Lock is not connected");
     }
 
     let data: Fingerprint[] = [];
