@@ -33,6 +33,7 @@ export interface TTLock {
 export class TTLock extends TTLockApi implements TTLock {
   private connected: boolean;
   private skipDataRead: boolean = false;
+  private connecting: boolean = false;
 
   constructor(device: TTBluetoothDevice, data?: TTLockData) {
     super(device, data);
@@ -72,16 +73,24 @@ export class TTLock extends TTLockApi implements TTLock {
   }
 
   async connect(skipDataRead: boolean = false, timeout: number = 15): Promise<boolean> {
+    if (this.connecting) {
+      return false;
+    }
+    if (this.connected) {
+      return true;
+    }
+    this.connecting = true;
     this.skipDataRead = skipDataRead;
     const connected = await this.device.connect();
+    let timeoutCycles = timeout * 10;
     if (connected) {
       do {
-        // TODO: if disconnection happens during initial data read we need to be notified so we don't wait
         await sleep(100);
-        timeout--;
-      } while (!this.connected && timeout > 0);
+        timeoutCycles--;
+      } while (!this.connected && timeoutCycles > 0 && this.connecting);
     }
     this.skipDataRead = false;
+    this.connecting = false;
     // it is possible that even tho device initially connected, reading initial data will disconnect
     return this.connected;
   }
@@ -1137,7 +1146,7 @@ export class TTLock extends TTLockApi implements TTLock {
           console.log("========= autoLockTime:", this.autoLockTime);
         }
 
-        if (this.lockedStatus != LockedStatus.UNKNOWN) {
+        if (this.lockedStatus == LockedStatus.UNKNOWN) {
           // Locked/unlocked status
           console.log("========= check lock status");
           this.lockedStatus = await this.searchBycicleStatusCommand();
@@ -1163,6 +1172,7 @@ export class TTLock extends TTLockApi implements TTLock {
 
   private async onDisconnected(): Promise<void> {
     this.connected = false;
+    this.connecting = false;
     this.emit("disconnected", this);
   }
 
