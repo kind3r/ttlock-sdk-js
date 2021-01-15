@@ -2,6 +2,7 @@
 
 import { Characteristic } from "@abandonware/noble";
 import { EventEmitter } from "events";
+import { sleep } from "../../util/timingUtil";
 import { CharacteristicInterface, DescriptorInterface } from "../DeviceInterface";
 import { NobleDescriptor } from "./NobleDescriptor";
 import { NobleDevice } from "./NobleDevice";
@@ -64,16 +65,31 @@ export class NobleCharacteristic extends EventEmitter implements CharacteristicI
     return this.lastValue;
   }
 
-  async write(data: Buffer, withoutResponse: boolean): Promise<void> {
+  async write(data: Buffer, withoutResponse: boolean): Promise<boolean> {
     this.device.checkBusy();
     if (!this.device.connected) {
       this.device.resetBusy();
       throw new Error("NobleDevice is not connected");
     }
 
-    await this.characteristic.writeAsync(data, withoutResponse);
+    let written = false;
+    let writeError = false;
+    let counter = 5000;
+
+    // await this.characteristic.writeAsync(data, withoutResponse);
+    this.characteristic.write(data, withoutResponse, (error) => {
+      if (error) {
+        writeError = true;
+      }
+      written = true;
+    });
+    do {
+      await sleep(1);
+      counter--;
+    } while (!written && counter > 0);
 
     this.device.resetBusy();
+    return written && !writeError;
   }
 
   async subscribe(): Promise<void> {

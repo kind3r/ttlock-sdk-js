@@ -11,7 +11,7 @@ export class NobleScanner extends EventEmitter implements ScannerInterface {
   uuids: string[];
   scannerState: ScannerStateType = "unknown";
   private nobleState: nobleStateType = "unknown";
-  private devices: Set<string> = new Set();
+  private devices: Map<string, NobleDevice> = new Map();
   protected noble?: typeof nobleObj;
 
   constructor(uuids: string[] = []) {
@@ -101,13 +101,16 @@ export class NobleScanner extends EventEmitter implements ScannerInterface {
   }
 
   protected async onNobleDiscover(peripheral: nobleObj.Peripheral): Promise<void> {
-    // if the device was already found, maybe advertisement has changed
     if (!this.devices.has(peripheral.id)) {
-      this.devices.add(peripheral.id);
-      // first time found, scan the services
       const nobleDevice = new NobleDevice(peripheral);
-      // await nobleDevice.discoverServices();
+      this.devices.set(peripheral.id, nobleDevice);
       this.emit("discover", nobleDevice);
+    } else {
+      //if the device was already found, maybe advertisement has changed
+      let nobleDevice = this.devices.get(peripheral.id);
+      if (typeof nobleDevice != "undefined") {
+        nobleDevice.updateFromPeripheral();
+      }
     }
   }
 

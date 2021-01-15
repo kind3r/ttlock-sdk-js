@@ -20,6 +20,7 @@ export interface Settings {
 export interface TTLockClient {
   on(event: "ready", listener: () => void): this;
   on(event: "foundLock", listener: (lock: TTLock) => void): this;
+  on(event: "updatedLock", listened: (lock: TTLock) => void): this;
   on(event: "scanStart", listener: () => void): this;
   on(event: "scanStop", listener: () => void): this;
 }
@@ -31,6 +32,7 @@ export class TTLockClient extends events.EventEmitter implements TTLockClient {
   scannerOptions: ScannerOptions;
   lockData: Map<string, TTLockData>;
   private adapterReady: boolean;
+  private lockDevices: Map<string, TTLock> = new Map();
 
   constructor(options: Settings) {
     super();
@@ -113,17 +115,31 @@ export class TTLockClient extends events.EventEmitter implements TTLockClient {
     // Is it a Lock device ?
     if (device.lockType != LockType.UNKNOWN) {
       const data = this.lockData.get(device.address);
-      const lock = new TTLock(device, data);
-      lock.on("lockUpdated", (lock) => {
-        const lockData = lock.getLockData();
-        if (lockData) {
-          this.lockData.set(lockData.address, lockData);
+
+      if (this.lockDevices.has(device.address)) {
+        const lock = this.lockDevices.get(device.address);
+        if (typeof lock != "undefined") {
+          // update lock
+          lock.updateFromDevice();
+          this.emit("updatedLock", lock);
         }
-      });
-      lock.on("lockReset", (address) => {
-        this.lockData.delete(address);
-      });
-      this.emit("foundLock", lock);
+
+      } else {
+        const lock = new TTLock(device, data);
+        this.lockDevices.set(device.address, lock);
+        lock.on("lockUpdated", (lock) => {
+          const lockData = lock.getLockData();
+          if (lockData) {
+            this.lockData.set(lockData.address, lockData);
+          }
+        });
+        lock.on("lockReset", (address) => {
+          this.lockData.delete(address);
+        });
+
+        this.emit("foundLock", lock);
+      }
+      
     }
   }
 }

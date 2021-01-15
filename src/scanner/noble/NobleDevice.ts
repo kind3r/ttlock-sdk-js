@@ -40,6 +40,20 @@ export class NobleDevice extends EventEmitter implements DeviceInterface {
     this.services = new Map();
   }
 
+  updateFromPeripheral() {
+    this.name = this.peripheral.advertisement.localName;
+    this.address = this.peripheral.address.replace(/\-/g, ':');
+    this.addressType = this.peripheral.addressType;
+    this.connectable = this.peripheral.connectable;
+    this.rssi = this.peripheral.rssi
+    // this.mtu = peripheral.mtu;
+    if (this.peripheral.advertisement.manufacturerData) {
+      this.manufacturerData = this.peripheral.advertisement.manufacturerData;
+    } else {
+      this.manufacturerData = Buffer.from([]);
+    }
+  }
+
   checkBusy(): boolean {
     if (this.busy) {
       throw new Error("NobleDevice is busy");
@@ -82,7 +96,7 @@ export class NobleDevice extends EventEmitter implements DeviceInterface {
   /**
    * Discover all services, characteristics and descriptors
    */
-  async discoverServices(): Promise<Map<string, ServiceInterface>> {
+  async discoverAll(): Promise<Map<string, ServiceInterface>> {
     try {
       this.checkBusy();
       if (!this.connected) {
@@ -93,6 +107,31 @@ export class NobleDevice extends EventEmitter implements DeviceInterface {
       this.resetBusy();
       this.services = new Map();
       snc.services.forEach((service) => {
+        const s = new NobleService(this, service);
+        this.services.set(s.uuid, s);
+      });
+      return this.services;
+    } catch (error) {
+      console.error(error);
+      this.resetBusy();
+      return new Map();
+    }
+  }
+
+  /**
+   * Discover services only
+   */
+  async discoverServices(): Promise<Map<string, ServiceInterface>> {
+    try {
+      this.checkBusy();
+      if (!this.connected) {
+        this.resetBusy();
+        throw new Error("NobleDevice not connected");
+      }
+      const services = await this.peripheral.discoverServicesAsync();
+      this.resetBusy();
+      this.services = new Map();
+      services.forEach((service) => {
         const s = new NobleService(this, service);
         this.services.set(s.uuid, s);
       });
@@ -135,6 +174,7 @@ export class NobleDevice extends EventEmitter implements DeviceInterface {
 
   onDisconnect() {
     this.connected = false;
+    this.resetBusy();
     this.services = new Map();
     this.emit("disconnected");
   }

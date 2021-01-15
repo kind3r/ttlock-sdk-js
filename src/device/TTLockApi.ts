@@ -73,7 +73,11 @@ export abstract class TTLockApi extends EventEmitter {
     super();
     this.device = device;
     this.privateData = {};
-    this.lockedStatus = LockedStatus.UNKNOWN;
+    if (this.device.isUnlock) {
+      this.lockedStatus = LockedStatus.UNLOCKED;
+    } else {
+      this.lockedStatus = LockedStatus.LOCKED;
+    }
     this.autoLockTime = -1;
     this.batteryCapacity = this.device.batteryCapacity;
     this.rssi = this.device.rssi;
@@ -87,7 +91,18 @@ export abstract class TTLockApi extends EventEmitter {
       this.privateData.pwdInfo = privateData.pwdInfo;
       this.initialized = true;
     } else {
-      this.initialized = !device.isSettingMode;
+      this.initialized = !this.device.isSettingMode;
+    }
+  }
+
+  updateFromDevice() {
+    this.batteryCapacity = this.device.batteryCapacity;
+    this.rssi = this.device.rssi;
+    this.initialized = !this.device.isSettingMode;
+    if (this.device.isUnlock) {
+      this.lockedStatus = LockedStatus.UNLOCKED;
+    } else {
+      this.lockedStatus = LockedStatus.LOCKED;
     }
   }
 

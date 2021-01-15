@@ -1,6 +1,6 @@
 {
   "name": "ttlock-sdk-js",
-  "version": "0.2.3",
+  "version": "0.2.19",
   "description": "JavaScript port of the TTLock Android SDK",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -31,7 +31,7 @@
     "get-fingerprints": "npm run build && node ./examples/getFR.js",
     "clear-fingerprints": "npm run build && node ./examples/clearFR.js",
     "listen": "npm run build && node --trace-warnings ./examples/listen.js",
-    "debug-tool": "npm run build && NOBLE_REPORT_ALL_HCI_EVENTS=1 node ./tools/dedbug.js",
+    "debug-tool": "npm run build && NOBLE_REPORT_ALL_HCI_EVENTS=1 node ./tools/debug.js",
     "server-tool": "NOBLE_REPORT_ALL_HCI_EVENTS=1 node ./tools/server.js"
   },
   "repository": {

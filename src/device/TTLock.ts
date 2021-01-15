@@ -71,16 +71,19 @@ export class TTLock extends TTLockApi implements TTLock {
     return this.rssi;
   }
 
-  async connect(skipDataRead: boolean = false): Promise<boolean> {
+  async connect(skipDataRead: boolean = false, timeout: number = 15): Promise<boolean> {
     this.skipDataRead = skipDataRead;
     const connected = await this.device.connect();
     if (connected) {
       do {
-        await sleep(500);
-      } while (!this.connected);
+        // TODO: if disconnection happens during initial data read we need to be notified so we don't wait
+        await sleep(100);
+        timeout--;
+      } while (!this.connected && timeout > 0);
     }
     this.skipDataRead = false;
-    return connected;
+    // it is possible that even tho device initially connected, reading initial data will disconnect
+    return this.connected;
   }
 
   isConnected(): boolean {
@@ -1120,24 +1123,28 @@ export class TTLock extends TTLockApi implements TTLock {
       // read general data
       console.log("Connected to known lock, reading general data");
       try {
-        // Search device features
-        console.log("========= feature list");
-        this.featureList = await this.searchDeviceFeatureCommand();
-        console.log("========= feature list", this.featureList);
+        if (typeof this.featureList == "undefined") {
+          // Search device features
+          console.log("========= feature list");
+          this.featureList = await this.searchDeviceFeatureCommand();
+          console.log("========= feature list", this.featureList);
+        }
 
         // Auto lock time
-        if (this.featureList.has(FeatureValue.AUTO_LOCK) && await this.macro_adminLogin()) {
+        if (this.featureList.has(FeatureValue.AUTO_LOCK) && this.autoLockTime == -1 && await this.macro_adminLogin()) {
           console.log("========= autoLockTime");
           this.autoLockTime = await this.searchAutoLockTimeCommand();
           console.log("========= autoLockTime:", this.autoLockTime);
         }
 
-        // Locked/unlocked status
-        console.log("========= check lock status");
-        this.lockedStatus = await this.searchBycicleStatusCommand();
-        console.log("========= check lock status", this.lockedStatus);
+        if (this.lockedStatus != LockedStatus.UNKNOWN) {
+          // Locked/unlocked status
+          console.log("========= check lock status");
+          this.lockedStatus = await this.searchBycicleStatusCommand();
+          console.log("========= check lock status", this.lockedStatus);
+        }
       } catch (error) {
-        console.error("Failed reading general data fromo lock", error);
+        console.error("Failed reading general data from lock", error);
       }
     } else {
       if (this.device.isUnlock) {
@@ -1146,8 +1153,12 @@ export class TTLock extends TTLockApi implements TTLock {
         this.lockedStatus = LockedStatus.LOCKED;
       }
     }
-    this.connected = true;
-    this.emit("connected", this);
+
+    // are we still connected ? It is possible the lock will disconnect while reading general data
+    if (this.device.connected) {
+      this.connected = true;
+      this.emit("connected", this);
+    }
   }
 
   private async onDisconnected(): Promise<void> {

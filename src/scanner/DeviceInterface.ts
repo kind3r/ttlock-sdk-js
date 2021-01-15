@@ -18,6 +18,7 @@ export interface DeviceInterface extends EventEmitter {
   resetBusy(): boolean;
   connect(): Promise<boolean>;
   disconnect(): Promise<boolean>;
+  discoverAll(): Promise<Map<string, ServiceInterface>>;
   discoverServices(): Promise<Map<string, ServiceInterface>>;
   readCharacteristics(): Promise<boolean>;
   toJSON(asObject: boolean): string | Object;
@@ -49,7 +50,7 @@ export interface CharacteristicInterface extends EventEmitter {
   descriptors: Map<string, DescriptorInterface>;
   discoverDescriptors(): Promise<Map<string, DescriptorInterface>>;
   read(): Promise<Buffer | undefined>;
-  write(data: Buffer, withoutResponse: boolean): Promise<void>;
+  write(data: Buffer, withoutResponse: boolean): Promise<boolean>;
   subscribe(): Promise<void>;
   toJSON(asObject: boolean): string | Object;
   toString(): string;

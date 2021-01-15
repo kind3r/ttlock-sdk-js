@@ -28,25 +28,28 @@ export class TTBluetoothDevice extends TTDevice implements TTBluetoothDevice {
 
   static createFromDevice(device: DeviceInterface): TTBluetoothDevice {
     const bDevice = new TTBluetoothDevice();
-    bDevice.id = device.id;
     bDevice.updateFromDevice(device);
     return bDevice;
   }
 
-  updateFromDevice(device: DeviceInterface): boolean {
-    // just check if we are updating the same device
-    if (this.id == device.id) {
-      this.device = device;
-      this.name = device.name;
-      this.rssi = device.rssi;
-      if (device.manufacturerData.length >= 15) {
-        this.parseManufacturerData(device.manufacturerData);
+  updateFromDevice(device?: DeviceInterface): void {
+    if (typeof device != "undefined") {
+      if (typeof this.device != "undefined") {
+        this.device.removeAllListeners();
       }
+      this.device = device;
       this.device.on("connected", this.onDeviceConnected.bind(this));
       this.device.on("disconnected", this.onDeviceDisconnected.bind(this));
-      return true;
     }
-    return false;
+
+    if (typeof this.device != "undefined") {
+      this.id = this.device.id;
+      this.name = this.device.name;
+      this.rssi = this.device.rssi;
+      if (this.device.manufacturerData.length >= 15) {
+        this.parseManufacturerData(this.device.manufacturerData);
+      }
+    }
   }
 
   async connect(): Promise<boolean> {
@@ -67,10 +70,12 @@ export class TTBluetoothDevice extends TTDevice implements TTBluetoothDevice {
     // await this.subscribe();
     // this.connected = true;
     // this.emit("connected");
+    // console.log("TTBluetoothDevice connected", this.device?.id);
   }
 
   private async onDeviceDisconnected() {
     this.connected = false;
+    // console.log("TTBluetoothDevice disconnected", this.device?.id);
     this.emit("disconnected");
   }
 
@@ -95,17 +100,19 @@ export class TTBluetoothDevice extends TTDevice implements TTBluetoothDevice {
   private async subscribe() {
     let service = this.device?.services.get("1910");
     if (typeof service != "undefined") {
+      await service.readCharacteristics();
       const characteristic = service.characteristics.get("fff4");
       if (typeof characteristic != "undefined") {
         await characteristic.subscribe();
         characteristic.on("dataRead", this.onIncomingData.bind(this));
-        await characteristic.discoverDescriptors();
-        const descriptor = characteristic.descriptors.get("2902");
-        if (typeof descriptor != "undefined") {
-          console.log("Subscribing to descriptor notifications");
-          await descriptor.writeValue(Buffer.from([0x01, 0x00])); // BE
-          // await descriptor.writeValue(Buffer.from([0x00, 0x01])); // LE
-        }
+        // does not seem to be required
+        // await characteristic.discoverDescriptors();
+        // const descriptor = characteristic.descriptors.get("2902");
+        // if (typeof descriptor != "undefined") {
+        //   console.log("Subscribing to descriptor notifications");
+        //   await descriptor.writeValue(Buffer.from([0x01, 0x00])); // BE
+        //   // await descriptor.writeValue(Buffer.from([0x00, 0x01])); // LE
+        // }
       }
     }
   }
@@ -139,21 +146,33 @@ export class TTBluetoothDevice extends TTDevice implements TTBluetoothDevice {
                 console.log("Sleeping a bit");
                 await sleep(500);
               }
-              await this.writeCharacteristic(characteristic, data);
+              const written = await this.writeCharacteristic(characteristic, data);
+              if (!written) {
+                this.waitingForResponse = false;
+                throw new Error("Unable to send data to lock");
+              }
               // wait for a response
               console.log("Waiting for response");
               let cycles = 0;
-              while (this.responses.length == 0) {
+              while (this.responses.length == 0 && this.connected) {
                 cycles++;
                 await sleep(5);
               }
               console.log("Waited for a response for", cycles, "=", cycles * 5, "ms");
+              if (!this.connected) {
+                this.waitingForResponse = false;
+                throw new Error("Disconnected while waiting for response");
+              }
               response = this.responses.pop();
               retry++;
             } while (typeof response == "undefined" || (!response.isCrcOk() && !ignoreCrc && retry <= 2));
             this.waitingForResponse = false;
             if (!response.isCrcOk() && !ignoreCrc) {
-              throw new Error("Malformed response, bad CRC");
+              if (process.env.TTLOCK_IGNORE_CRC == "1") {
+                console.error("Malformed response, bad CRC, ignoring");
+              } else {
+                throw new Error("Malformed response, bad CRC");
+              }
             }
             return response;
           } else {
@@ -191,15 +210,19 @@ export class TTBluetoothDevice extends TTDevice implements TTBluetoothDevice {
     return response;
   }
 
-  private async writeCharacteristic(characteristic: CharacteristicInterface, data: Buffer): Promise<void> {
+  private async writeCharacteristic(characteristic: CharacteristicInterface, data: Buffer): Promise<boolean> {
     console.log("Sending command:", data.toString("hex"));
     let index = 0;
     do {
       const remaining = data.length - index;
-      await characteristic.write(data.subarray(index, index + Math.min(MTU, remaining)), true);
+      const written = await characteristic.write(data.subarray(index, index + Math.min(MTU, remaining)), true);
+      if (!written) {
+        return false;
+      }
       // await sleep(10);
       index += MTU;
     } while (index < data.length);
+    return true;
   }
 
   private onIncomingData(data: Buffer) {

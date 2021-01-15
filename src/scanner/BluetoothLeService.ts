@@ -19,11 +19,11 @@ export interface BluetoothLeService {
 
 export class BluetoothLeService extends EventEmitter implements BluetoothLeService {
   private scanner: ScannerInterface;
-  private devices: Map<string, TTBluetoothDevice>;
+  private btDevices: Map<string, TTBluetoothDevice>;
 
   constructor(uuids: string[] = TTLockUUIDs, scannerType: ScannerType = "noble", scannerOptions: ScannerOptions) {
     super();
-    this.devices = new Map();
+    this.btDevices = new Map();
     if (scannerType == "noble") {
       this.scanner = new NobleScanner(uuids);
     } else if (scannerType == "noble-websocket") {
@@ -53,16 +53,16 @@ export class BluetoothLeService extends EventEmitter implements BluetoothLeServi
   private onDiscover(btDevice: DeviceInterface) {
     // TODO: move device storage to TTLockClient
     // check if the device was previously discovered and update
-    if(this.devices.has(btDevice.id)) {
-      const device = this.devices.get(btDevice.id);
+    if(this.btDevices.has(btDevice.id)) {
+      const device = this.btDevices.get(btDevice.id);
       if (typeof device != 'undefined') {
-        device.updateFromDevice(btDevice);
+        device.updateFromDevice();
         // I don't think we should resend the discover on update
         // this.emit("discover", device);
       }
     } else {
       const device = TTBluetoothDevice.createFromDevice(btDevice);
-      this.devices.set(btDevice.id, device);
+      this.btDevices.set(btDevice.id, device);
       this.emit("discover", device);
     }
   }
