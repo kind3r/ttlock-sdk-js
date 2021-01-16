@@ -37,11 +37,11 @@ async function doStuff() {
   client.startScanLock();
   console.log("Scan started");
   client.on("foundLock", async (lock) => {
-    await lock.connect();
     console.log(lock.toJSON());
     console.log();
-
+    
     if (lock.isInitialized() && lock.isPaired()) {
+      await lock.connect();
       console.log("Trying to lock the lock");
       console.log();
       console.log();

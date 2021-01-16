@@ -110,6 +110,7 @@ export class NobleScanner extends EventEmitter implements ScannerInterface {
       let nobleDevice = this.devices.get(peripheral.id);
       if (typeof nobleDevice != "undefined") {
         nobleDevice.updateFromPeripheral();
+        this.emit("discover", nobleDevice);
       }
     }
   }

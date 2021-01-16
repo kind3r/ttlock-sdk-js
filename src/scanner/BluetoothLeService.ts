@@ -57,8 +57,7 @@ export class BluetoothLeService extends EventEmitter implements BluetoothLeServi
       const device = this.btDevices.get(btDevice.id);
       if (typeof device != 'undefined') {
         device.updateFromDevice();
-        // I don't think we should resend the discover on update
-        // this.emit("discover", device);
+        this.emit("discover", device);
       }
     } else {
       const device = TTBluetoothDevice.createFromDevice(btDevice);

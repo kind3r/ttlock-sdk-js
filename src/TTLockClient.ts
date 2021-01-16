@@ -125,8 +125,7 @@ export class TTLockClient extends events.EventEmitter implements TTLockClient {
   private onScanResult(device: TTBluetoothDevice): void {
     // Is it a Lock device ?
     if (device.lockType != LockType.UNKNOWN) {
-      const data = this.lockData.get(device.address);
-
+      
       if (this.lockDevices.has(device.address)) {
         const lock = this.lockDevices.get(device.address);
         if (typeof lock != "undefined") {
@@ -134,8 +133,8 @@ export class TTLockClient extends events.EventEmitter implements TTLockClient {
           lock.updateFromDevice();
           this.emit("updatedLock", lock);
         }
-
       } else {
+        const data = this.lockData.get(device.address);
         const lock = new TTLock(device, data);
         this.lockDevices.set(device.address, lock);
         lock.on("lockUpdated", (lock) => {

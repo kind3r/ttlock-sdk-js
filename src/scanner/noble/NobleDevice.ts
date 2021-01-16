@@ -26,7 +26,7 @@ export class NobleDevice extends EventEmitter implements DeviceInterface {
     this.id = peripheral.id;
     this.uuid = peripheral.uuid;
     this.name = peripheral.advertisement.localName;
-    this.address = peripheral.address.replace(/\-/g, ':');
+    this.address = peripheral.address.replace(/\-/g, ':').toUpperCase();
     this.addressType = peripheral.addressType;
     this.connectable = peripheral.connectable;
     this.rssi = peripheral.rssi
@@ -42,7 +42,7 @@ export class NobleDevice extends EventEmitter implements DeviceInterface {
 
   updateFromPeripheral() {
     this.name = this.peripheral.advertisement.localName;
-    this.address = this.peripheral.address.replace(/\-/g, ':');
+    this.address = this.peripheral.address.replace(/\-/g, ':').toUpperCase();
     this.addressType = this.peripheral.addressType;
     this.connectable = this.peripheral.connectable;
     this.rssi = this.peripheral.rssi
