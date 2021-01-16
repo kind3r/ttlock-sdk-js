@@ -81,15 +81,9 @@ export abstract class TTLockApi extends EventEmitter {
     this.autoLockTime = -1;
     this.batteryCapacity = this.device.batteryCapacity;
     this.rssi = this.device.rssi;
+    this.initialized = false; // just workaround for TypeScript
     if (typeof data != "undefined") {
-      const privateData = data.privateData;
-      if (privateData.aesKey) {
-        this.privateData.aesKey = Buffer.from(privateData.aesKey, "hex");
-      }
-      this.privateData.admin = privateData.admin;
-      this.privateData.adminPasscode = privateData.adminPasscode;
-      this.privateData.pwdInfo = privateData.pwdInfo;
-      this.initialized = true;
+      this.updateLockData(data);
     } else {
       this.initialized = !this.device.isSettingMode;
     }
@@ -104,6 +98,17 @@ export abstract class TTLockApi extends EventEmitter {
     } else {
       this.lockedStatus = LockedStatus.LOCKED;
     }
+  }
+
+  updateLockData(data: TTLockData) {
+    const privateData = data.privateData;
+    if (privateData.aesKey) {
+      this.privateData.aesKey = Buffer.from(privateData.aesKey, "hex");
+    }
+    this.privateData.admin = privateData.admin;
+    this.privateData.adminPasscode = privateData.adminPasscode;
+    this.privateData.pwdInfo = privateData.pwdInfo;
+    this.initialized = true;
   }
 
   /**

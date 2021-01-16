@@ -57,9 +57,7 @@ export class TTLockClient extends events.EventEmitter implements TTLockClient {
 
     this.lockData = new Map();
     if (options.lockData && options.lockData.length > 0) {
-      options.lockData.forEach((lockData) => {
-        this.lockData.set(lockData.address, lockData);
-      });
+      this.setLockData(options.lockData);
     }
   }
 
@@ -109,6 +107,19 @@ export class TTLockClient extends events.EventEmitter implements TTLockClient {
       lockData.push(lock);
     })
     return lockData;
+  }
+
+  setLockData(newLockData: TTLockData[]): void {
+    this.lockData = new Map();
+    if (newLockData && newLockData.length > 0) {
+      newLockData.forEach((lockData) => {
+        this.lockData.set(lockData.address, lockData);
+        const lock = this.lockDevices.get(lockData.address);
+        if (typeof lock != "undefined") {
+          lock.updateLockData(lockData);
+        }
+      });
+    }
   }
 
   private onScanResult(device: TTBluetoothDevice): void {
