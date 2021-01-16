@@ -143,8 +143,8 @@ export class TTBluetoothDevice extends TTDevice implements TTBluetoothDevice {
             do {
               if (retry > 0) {
                 // wait a bit before retry
-                console.log("Sleeping a bit");
-                await sleep(500);
+                // console.log("Sleeping a bit");
+                await sleep(200);
               }
               const written = await this.writeCharacteristic(characteristic, data);
               if (!written) {
@@ -155,7 +155,7 @@ export class TTBluetoothDevice extends TTDevice implements TTBluetoothDevice {
                 throw new Error("Unable to send data to lock");
               }
               // wait for a response
-              console.log("Waiting for response");
+              // console.log("Waiting for response");
               let cycles = 0;
               while (this.responses.length == 0 && this.connected) {
                 cycles++;
@@ -215,7 +215,9 @@ export class TTBluetoothDevice extends TTDevice implements TTBluetoothDevice {
   }
 
   private async writeCharacteristic(characteristic: CharacteristicInterface, data: Buffer): Promise<boolean> {
-    console.log("Sending command:", data.toString("hex"));
+    if (process.env.TTLOCK_DEBUG_COMM == "1") {
+      console.log("Sending command:", data.toString("hex"));
+    }
     let index = 0;
     do {
       const remaining = data.length - index;
@@ -240,7 +242,9 @@ export class TTBluetoothDevice extends TTDevice implements TTBluetoothDevice {
       const ending = this.incomingDataBuffer.subarray(this.incomingDataBuffer.length - 2);
       if (ending.toString("hex") == CRLF) {
         // we have a command response
-        console.log("Received response:", this.incomingDataBuffer.toString("hex"));
+        if (process.env.TTLOCK_DEBUG_COMM == "1") {
+          console.log("Received response:", this.incomingDataBuffer.toString("hex"));
+        }
         try {
           const command = CommandEnvelope.createFromRawData(this.incomingDataBuffer.subarray(0, this.incomingDataBuffer.length - 2));
           if (this.waitingForResponse) {

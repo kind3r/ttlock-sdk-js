@@ -17,7 +17,9 @@ export abstract class Command {
     if (data) {
       this.commandResponse = data.readInt8(1);
       this.commandData = data.subarray(2);
-      console.log('Command:', this.commandData.toString("hex"));
+      if (process.env.TTLOCK_DEBUG_COMM == "1") {
+        console.log('Command:', this.commandData.toString("hex"));
+      }
       this.processData();
     }
   }
