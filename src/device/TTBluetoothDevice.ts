@@ -149,6 +149,9 @@ export class TTBluetoothDevice extends TTDevice implements TTBluetoothDevice {
               const written = await this.writeCharacteristic(characteristic, data);
               if (!written) {
                 this.waitingForResponse = false;
+                // make sure we clear response buffer as a response could still have been
+                // received between writing packets (before lock disconnects, on unstable network) 
+                this.responses = [];
                 throw new Error("Unable to send data to lock");
               }
               // wait for a response
@@ -158,9 +161,10 @@ export class TTBluetoothDevice extends TTDevice implements TTBluetoothDevice {
                 cycles++;
                 await sleep(5);
               }
-              console.log("Waited for a response for", cycles, "=", cycles * 5, "ms");
+              // console.log("Waited for a response for", cycles, "=", cycles * 5, "ms");
               if (!this.connected) {
                 this.waitingForResponse = false;
+                this.responses = [];
                 throw new Error("Disconnected while waiting for response");
               }
               response = this.responses.pop();
