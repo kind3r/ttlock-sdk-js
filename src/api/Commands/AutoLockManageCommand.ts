@@ -30,7 +30,7 @@ export class AutoLockManageCommand extends Command {
   build(): Buffer {
     if (this.opType == AutoLockOperate.SEARCH) {
       return Buffer.from([this.opType]);
-    } else if (this.opValue) {
+    } else if (typeof this.opValue != "undefined") {
       return Buffer.from([
         this.opType,
         this.opValue >> 8,
@@ -47,7 +47,7 @@ export class AutoLockManageCommand extends Command {
   }
 
   getTime(): number {
-    if (this.opValue) {
+    if (typeof this.opValue != "undefined") {
       return this.opValue;
     } else {
       return -1;
