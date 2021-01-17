@@ -54,7 +54,7 @@ function sendEvent(event) {
 }
 
 var onMessage = function (ws, message) {
-  console.log(moment().format('YYYYMMDD HH:mm:ss.SSS') + ' <-- ' + chalk.blue(message));
+  console.log(moment().format('YYYYMMDD HH:mm:ss.SSS') + ' <-- ' + chalk.cyan(message));
 
   var command;
   try {
