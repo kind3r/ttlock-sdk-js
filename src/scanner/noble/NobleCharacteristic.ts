@@ -49,6 +49,9 @@ export class NobleCharacteristic extends EventEmitter implements CharacteristicI
   }
 
   async read(): Promise<Buffer | undefined> {
+    if (!this.properties.includes("read")) {
+      return;
+    }
     this.device.checkBusy();
     if (!this.device.connected) {
       this.device.resetBusy();
@@ -66,6 +69,9 @@ export class NobleCharacteristic extends EventEmitter implements CharacteristicI
   }
 
   async write(data: Buffer, withoutResponse: boolean): Promise<boolean> {
+    if (!this.properties.includes("write") && !this.properties.includes("writeWithoutResponse")) {
+      return false;
+    }
     this.device.checkBusy();
     if (!this.device.connected) {
       this.device.resetBusy();
