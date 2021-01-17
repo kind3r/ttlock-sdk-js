@@ -1,5 +1,6 @@
 var WebSocket = require('ws');
 var CryptoJS = require("crypto-js");
+const moment = require("moment");
 
 const aesKey = process.env.WEBSOCKET_KEY || "f8b55c272eb007f501560839be1f1e7e";
 const credentials = process.env.WEBSOCKET_CREDENTIALS || "admin:admin";
@@ -9,13 +10,13 @@ var noble = require('@abandonware/noble');
 /** @type {WebSocket.Server} */
 var wss;
 
-console.log('noble - ws slave - server mode');
+console.log(moment().format('YYYYMMDD HH:mm:ss.SSS') + ' noble - ws slave - server mode');
 wss = new WebSocket.Server({
   port: process.env.WEBSOCKET_PORT || 2846
 });
 
 wss.on('connection', function (ws) {
-  console.log('ws -> connection');
+  console.log(moment().format('YYYYMMDD HH:mm:ss.SSS') + ' <-> connect');
 
   ws.isAuthenticated = false;
   ws.authChallenge = CryptoJS.lib.WordArray.random(16).toString(CryptoJS.enc.Hex);
@@ -25,7 +26,7 @@ wss.on('connection', function (ws) {
   });
 
   ws.on('close', function () {
-    console.log('ws -> close');
+    console.log(moment().format('YYYYMMDD HH:mm:ss.SSS') + ' <-> disconnect');
     noble.stopScanning();
   });
 
@@ -42,7 +43,7 @@ var peripherals = new Map();
 function sendEvent(event) {
   var message = JSON.stringify(event);
 
-  console.log('ws -> send: ' + message);
+  console.log(moment().format('YYYYMMDD HH:mm:ss.SSS') + ' --> ' + message);
 
   for (let client of wss.clients) {
     if (client.isAuthenticated || event.type == "auth") {
@@ -52,13 +53,13 @@ function sendEvent(event) {
 }
 
 var onMessage = function (ws, message) {
-  console.log('ws -> message: ' + message);
+  console.log(moment().format('YYYYMMDD HH:mm:ss.SSS') + ' <-- ' + message);
 
   var command;
   try {
     command = JSON.parse(message);
   } catch (error) {
-    console.log(error);
+    console.log(moment().format('YYYYMMDD HH:mm:ss.SSS'), error);
     return;
   }
 

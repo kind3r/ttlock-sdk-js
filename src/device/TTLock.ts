@@ -1117,8 +1117,8 @@ export class TTLock extends TTLockApi implements TTLock {
     // is this just a notification (like the lock was locked/unlocked etc.)
     if (this.privateData.aesKey) {
       command.setAesKey(this.privateData.aesKey);
-      console.log("Received:", command);
       const data = command.getCommand().getRawData();
+      console.log("Received:", command);
       if (data) {
         console.log("Data", data.toString("hex"));
       }

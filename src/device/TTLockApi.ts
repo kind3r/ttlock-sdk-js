@@ -661,8 +661,14 @@ export abstract class TTLockApi extends EventEmitter {
       if (cmd.getResponse() != CommandResponse.SUCCESS) {
         throw new Error("Failed unlock response");
       }
-      this.batteryCapacity = cmd.getBatteryCapacity();
-      return cmd.getUnlockData();
+      // it is possible here that the UnlockCommand will have a bad CRC 
+      // and we will read a SearchBicycleStatusCommand that is sent right after instead
+      if (typeof cmd.getBatteryCapacity != "undefined") {
+        this.batteryCapacity = cmd.getBatteryCapacity();
+        return cmd.getUnlockData();
+      } else {
+        return {}
+      }
     } else {
       throw new Error("No response to unlock");
     }
@@ -690,8 +696,14 @@ export abstract class TTLockApi extends EventEmitter {
       if (cmd.getResponse() != CommandResponse.SUCCESS) {
         throw new Error("Failed unlock response");
       }
-      this.batteryCapacity = cmd.getBatteryCapacity();
-      return cmd.getUnlockData();
+      // it is possible here that the LockCommand will have a bad CRC 
+      // and we will read a SearchBicycleStatusCommand  that is sent right after instead
+      if (typeof cmd.getBatteryCapacity != "undefined") {
+        this.batteryCapacity = cmd.getBatteryCapacity();
+        return cmd.getUnlockData();
+      } else {
+        return {};
+      }
     } else {
       throw new Error("No response to unlock");
     }
