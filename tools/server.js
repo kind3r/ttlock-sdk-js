@@ -1,6 +1,7 @@
 var WebSocket = require('ws');
 var CryptoJS = require("crypto-js");
 const moment = require("moment");
+const chalk = require('chalk');
 
 const aesKey = process.env.WEBSOCKET_KEY || "f8b55c272eb007f501560839be1f1e7e";
 const credentials = process.env.WEBSOCKET_CREDENTIALS || "admin:admin";
@@ -16,7 +17,7 @@ wss = new WebSocket.Server({
 });
 
 wss.on('connection', function (ws) {
-  console.log(moment().format('YYYYMMDD HH:mm:ss.SSS') + ' <-> connect');
+  console.log(moment().format('YYYYMMDD HH:mm:ss.SSS') + ' <-> ' + chalk.magenta('connect'));
 
   ws.isAuthenticated = false;
   ws.authChallenge = CryptoJS.lib.WordArray.random(16).toString(CryptoJS.enc.Hex);
@@ -26,7 +27,7 @@ wss.on('connection', function (ws) {
   });
 
   ws.on('close', function () {
-    console.log(moment().format('YYYYMMDD HH:mm:ss.SSS') + ' <-> disconnect');
+    console.log(moment().format('YYYYMMDD HH:mm:ss.SSS') + ' <-> ' + chalk.yellow('disconnect'));
     noble.stopScanning();
   });
 
@@ -43,7 +44,7 @@ var peripherals = new Map();
 function sendEvent(event) {
   var message = JSON.stringify(event);
 
-  console.log(moment().format('YYYYMMDD HH:mm:ss.SSS') + ' --> ' + message);
+  console.log(moment().format('YYYYMMDD HH:mm:ss.SSS') + ' --> ' + chalk.green(message));
 
   for (let client of wss.clients) {
     if (client.isAuthenticated || event.type == "auth") {
@@ -53,13 +54,13 @@ function sendEvent(event) {
 }
 
 var onMessage = function (ws, message) {
-  console.log(moment().format('YYYYMMDD HH:mm:ss.SSS') + ' <-- ' + message);
+  console.log(moment().format('YYYYMMDD HH:mm:ss.SSS') + ' <-- ' + chalk.blue(message));
 
   var command;
   try {
     command = JSON.parse(message);
   } catch (error) {
-    console.log(moment().format('YYYYMMDD HH:mm:ss.SSS'), error);
+    console.log(chalk.red(moment().format('YYYYMMDD HH:mm:ss.SSS')), error);
     return;
   }
 
