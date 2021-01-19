@@ -84,39 +84,49 @@ export class TTBluetoothDevice extends TTDevice implements TTBluetoothDevice {
     if (typeof this.device != "undefined") {
       await this.device.discoverServices();
       // update some basic information
-      let service = this.device?.services.get("1800");
-      if (typeof service != "undefined") {
-        await service.readCharacteristics();
-        this.putCharacteristicValue(service, "2a00", "name");
+      let service: ServiceInterface | undefined;
+      if (this.device.services.has("1800")) {
+        service = this.device.services.get("1800");
+        if (typeof service != "undefined") {
+          await service.readCharacteristics();
+          this.putCharacteristicValue(service, "2a00", "name");
+        }
       }
-      service = this.device.services.get("180a");
-      if (typeof service != "undefined") {
-        await service.readCharacteristics();
-        this.putCharacteristicValue(service, "2a29", "manufacturer");
-        this.putCharacteristicValue(service, "2a24", "model");
-        this.putCharacteristicValue(service, "2a27", "hardware");
-        this.putCharacteristicValue(service, "2a26", "firmware");
+      if (this.device.services.has("180a")) {
+        service = this.device.services.get("180a");
+        if (typeof service != "undefined") {
+          await service.readCharacteristics();
+          this.putCharacteristicValue(service, "2a29", "manufacturer");
+          this.putCharacteristicValue(service, "2a24", "model");
+          this.putCharacteristicValue(service, "2a27", "hardware");
+          this.putCharacteristicValue(service, "2a26", "firmware");
+        }
       }
     }
   }
 
   private async subscribe() {
     if (typeof this.device != "undefined") {
-      let service = this.device.services.get("1910");
+      let service: ServiceInterface | undefined;
+      if (this.device.services.has("1910")) {
+        service = this.device.services.get("1910");
+      }
       if (typeof service != "undefined") {
         await service.readCharacteristics();
-        const characteristic = service.characteristics.get("fff4");
-        if (typeof characteristic != "undefined") {
-          await characteristic.subscribe();
-          characteristic.on("dataRead", this.onIncomingData.bind(this));
-          // does not seem to be required
-          // await characteristic.discoverDescriptors();
-          // const descriptor = characteristic.descriptors.get("2902");
-          // if (typeof descriptor != "undefined") {
-          //   console.log("Subscribing to descriptor notifications");
-          //   await descriptor.writeValue(Buffer.from([0x01, 0x00])); // BE
-          //   // await descriptor.writeValue(Buffer.from([0x00, 0x01])); // LE
-          // }
+        if (service.characteristics.has("fff4")) {
+          const characteristic = service.characteristics.get("fff4");
+          if (typeof characteristic != "undefined") {
+            await characteristic.subscribe();
+            characteristic.on("dataRead", this.onIncomingData.bind(this));
+            // does not seem to be required
+            // await characteristic.discoverDescriptors();
+            // const descriptor = characteristic.descriptors.get("2902");
+            // if (typeof descriptor != "undefined") {
+            //   console.log("Subscribing to descriptor notifications");
+            //   await descriptor.writeValue(Buffer.from([0x01, 0x00])); // BE
+            //   // await descriptor.writeValue(Buffer.from([0x00, 0x01])); // LE
+            // }
+          }
         }
       }
     }

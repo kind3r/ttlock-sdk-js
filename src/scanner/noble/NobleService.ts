@@ -26,9 +26,16 @@ export class NobleService implements ServiceInterface {
       this.characteristics = new Map();
       service.characteristics.forEach((characteristic) => {
         const c = new NobleCharacteristic(this.device, characteristic);
-        this.characteristics.set(c.uuid, c);
+        this.characteristics.set(c.getUUID(), c);
       });
     }
+  }
+
+  getUUID(): string {
+    if (this.uuid.length > 4) {
+      return this.uuid.replace("-0000-1000-8000-00805f9b34fb", "").replace("0000", "");
+    }
+    return this.uuid;
   }
 
   async discoverCharacteristics(): Promise<Map<string, CharacteristicInterface>> {
@@ -39,7 +46,7 @@ export class NobleService implements ServiceInterface {
       this.characteristics = new Map();
       characteristics.forEach((characteristic) => {
         const c = new NobleCharacteristic(this.device, characteristic);
-        this.characteristics.set(c.uuid, c);
+        this.characteristics.set(c.getUUID(), c);
       });
       return this.characteristics;
     } catch (error) {

@@ -108,7 +108,7 @@ export class NobleDevice extends EventEmitter implements DeviceInterface {
       this.services = new Map();
       snc.services.forEach((service) => {
         const s = new NobleService(this, service);
-        this.services.set(s.uuid, s);
+        this.services.set(s.getUUID(), s);
       });
       return this.services;
     } catch (error) {
@@ -133,7 +133,7 @@ export class NobleDevice extends EventEmitter implements DeviceInterface {
       this.services = new Map();
       services.forEach((service) => {
         const s = new NobleService(this, service);
-        this.services.set(s.uuid, s);
+        this.services.set(s.getUUID(), s);
       });
       return this.services;
     } catch (error) {

@@ -29,6 +29,13 @@ export class NobleCharacteristic extends EventEmitter implements CharacteristicI
     this.characteristic.on("read", this.onRead.bind(this));
   }
 
+  getUUID(): string {
+    if (this.uuid.length > 4) {
+      return this.uuid.replace("-0000-1000-8000-00805f9b34fb", "").replace("0000", "");
+    }
+    return this.uuid;
+  }
+
   async discoverDescriptors(): Promise<Map<string, DescriptorInterface>> {
     this.device.checkBusy();
     if (!this.device.connected) {

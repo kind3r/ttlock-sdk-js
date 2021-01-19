@@ -34,8 +34,9 @@ export interface ServiceInterface {
   type?: string;
   includedServiceUuids: string[];
   characteristics: Map<string, CharacteristicInterface>;
+  getUUID(): string;
   discoverCharacteristics(): Promise<Map<string, CharacteristicInterface>>;
-  readCharacteristics(): Promise<Map<string, CharacteristicInterface>>
+  readCharacteristics(): Promise<Map<string, CharacteristicInterface>>;
   toJSON(asObject: boolean): string | Object;
   toString(): string;
 }
@@ -48,6 +49,7 @@ export interface CharacteristicInterface extends EventEmitter {
   isReading: boolean;
   lastValue?: Buffer;
   descriptors: Map<string, DescriptorInterface>;
+  getUUID(): string;
   discoverDescriptors(): Promise<Map<string, DescriptorInterface>>;
   read(): Promise<Buffer | undefined>;
   write(data: Buffer, withoutResponse: boolean): Promise<boolean>;
