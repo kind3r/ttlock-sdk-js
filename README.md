@@ -6,6 +6,8 @@ The goal of this project is to make a partial JavaScript port of the TTLock Andr
 
 > Bluetooth implementation is using [@abandonware/noble](https://github.com/abandonware/noble) but other implementations are possible by extending [ScannerInterface](./src/scanner/ScannerInterface.ts)  
 
+Feeling generous and want to support my work, here is [my PayPal link](https://paypal.me/kind3r).  
+
 ## Requirements
 - node.js v12 or newer
 - a bluetooth adapter on any platform* that [@abandonware/noble](https://github.com/abandonware/noble#installation) works on
