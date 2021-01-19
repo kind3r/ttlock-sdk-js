@@ -194,13 +194,13 @@ export class TTLock extends TTLockApi implements TTLock {
         remoteUnlock: ConfigRemoteUnlock.OP_OPEN | ConfigRemoteUnlock.OP_CLOSE | undefined;
 
       // Feature depended queries
-      if (featureList.has(FeatureValue.RESET_BUTTON)
-        || featureList.has(FeatureValue.TAMPER_ALERT)
-        || featureList.has(FeatureValue.PRIVACK_LOCK)) {
-        console.log("========= switchState");
-        switchState = await this.getSwitchStateCommand(undefined, aesKey);
-        console.log("========= switchState:", switchState);
-      }
+      // if (featureList.has(FeatureValue.RESET_BUTTON)
+      //   || featureList.has(FeatureValue.TAMPER_ALERT)
+      //   || featureList.has(FeatureValue.PRIVACK_LOCK)) {
+      //   console.log("========= switchState");
+      //   switchState = await this.getSwitchStateCommand(undefined, aesKey);
+      //   console.log("========= switchState:", switchState);
+      // }
       if (featureList.has(FeatureValue.AUDIO_MANAGEMENT)) {
         console.log("========= lockSound");
         try {
@@ -221,11 +221,11 @@ export class TTLock extends TTLockApi implements TTLock {
         autoLockTime = await this.searchAutoLockTimeCommand(undefined, aesKey);
         console.log("========= autoLockTime:", autoLockTime);
       }
-      if (featureList.has(FeatureValue.LAMP)) {
-        console.log("========= lightingTime");
-        lightingTime = await this.controlLampCommand(undefined, aesKey);
-        console.log("========= lightingTime:", lightingTime);
-      }
+      // if (featureList.has(FeatureValue.LAMP)) {
+      //   console.log("========= lightingTime");
+      //   lightingTime = await this.controlLampCommand(undefined, aesKey);
+      //   console.log("========= lightingTime:", lightingTime);
+      // }
       if (featureList.has(FeatureValue.GET_ADMIN_CODE)) {
         // Command.COMM_GET_ADMIN_CODE
         console.log("========= getAdminCode");
