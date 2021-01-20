@@ -9,12 +9,14 @@ export class ControlRemoteUnlockCommand extends Command {
 
   private opType: ConfigRemoteUnlock.OP_TYPE_SEARCH | ConfigRemoteUnlock.OP_TYPE_MODIFY = ConfigRemoteUnlock.OP_TYPE_SEARCH;
   private opValue?: ConfigRemoteUnlock.OP_CLOSE | ConfigRemoteUnlock.OP_OPEN;
+  private batteryCapacity?: number;
 
   protected processData(): void {
-    if (this.commandData) {
-      this.opType = this.commandData.readUInt8(0);
-      if (this.opType == ConfigRemoteUnlock.OP_TYPE_SEARCH && this.commandData.length > 1) {
-        this.opValue = this.commandData.readUInt8(1);
+    if (this.commandData && this.commandData.length > 0) {
+      this.batteryCapacity = this.commandData.readUInt8(0);
+      this.opType = this.commandData.readUInt8(1);
+      if (this.opType == ConfigRemoteUnlock.OP_TYPE_SEARCH && this.commandData.length > 2) {
+        this.opValue = this.commandData.readUInt8(2);
       }
     }
   }
@@ -35,8 +37,16 @@ export class ControlRemoteUnlockCommand extends Command {
   }
 
   getValue(): ConfigRemoteUnlock.OP_CLOSE | ConfigRemoteUnlock.OP_OPEN | void {
-    if (this.opValue) {
+    if (typeof this.opValue != "undefined") {
       return this.opValue;
+    }
+  }
+
+  getBatteryCapacity(): number {
+    if (typeof this.batteryCapacity != "undefined") {
+      return this.batteryCapacity;
+    } else {
+      return -1;
     }
   }
 }

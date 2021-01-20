@@ -250,7 +250,7 @@ export class TTLock extends TTLockApi implements TTLock {
 
       if (featureList.has(FeatureValue.CONFIG_GATEWAY_UNLOCK)) {
         console.log("========= remoteUnlock");
-        remoteUnlock = await this.controlRemoteUnlockCommand(ConfigRemoteUnlock.OP_CLOSE, aesKey);
+        remoteUnlock = await this.controlRemoteUnlockCommand(undefined, aesKey);
         console.log("========= remoteUnlock:", remoteUnlock);
       }
 

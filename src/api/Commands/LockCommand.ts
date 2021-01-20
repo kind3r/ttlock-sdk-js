@@ -58,7 +58,7 @@ export class LockCommand extends Command {
   }
 
   getBatteryCapacity(): number {
-    if (this.batteryCapacity) {
+    if (typeof this.batteryCapacity != "undefined") {
       return this.batteryCapacity;
     } else {
       return -1;

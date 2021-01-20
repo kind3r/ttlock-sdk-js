@@ -473,8 +473,9 @@ export abstract class TTLockApi extends EventEmitter {
       if (typeof newValue != "undefined") {
         return newValue;
       } else {
+        this.batteryCapacity = cmd.getBatteryCapacity();
         const value = cmd.getValue();
-        if (value) {
+        if (typeof value != "undefined") {
           return value;
         } else {
           throw new Error("Unable to get remote unlock value");
