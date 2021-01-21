@@ -53,7 +53,7 @@ export class TTBluetoothDevice extends TTDevice implements TTBluetoothDevice {
   }
 
   async connect(): Promise<boolean> {
-    if (this.device && this.device.connectable) {
+    if (typeof this.device != "undefined" && this.device.connectable) {
       if (await this.device.connect()) {
         // TODO: something happens here (disconnect) and it's stuck in limbo
         await this.readBasicInfo();
@@ -61,7 +61,11 @@ export class TTBluetoothDevice extends TTDevice implements TTBluetoothDevice {
         this.connected = true;
         this.emit("connected");
         return true;
+      } else {
+        console.log("Connect failed");
       }
+    } else {
+      console.log("Missing device or not connectable");
     }
     return false;
   }

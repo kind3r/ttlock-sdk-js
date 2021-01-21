@@ -1113,6 +1113,44 @@ export class TTLock extends TTLockApi implements TTLock {
     return data;
   }
 
+  /**
+   * No ideea what this does ...
+   * @param type 
+   */
+  async setRemoteUnlock(type?: ConfigRemoteUnlock.OP_CLOSE | ConfigRemoteUnlock.OP_OPEN): Promise<ConfigRemoteUnlock.OP_CLOSE | ConfigRemoteUnlock.OP_OPEN | undefined> {
+    if (!this.initialized) {
+      throw new Error("Lock is in pairing mode");
+    }
+
+    if (typeof this.featureList == "undefined") {
+      throw new Error("Lock features missing");
+    }
+
+    if (!this.featureList.has(FeatureValue.CONFIG_GATEWAY_UNLOCK)) {
+      throw new Error("Lock does not support remote unlock");
+    }
+
+    if (!this.isConnected()) {
+      throw new Error("Lock is not connected");
+    }
+
+    try {
+      if (await this.macro_adminLogin()) {
+        console.log("========= remoteUnlock");
+        if (typeof type != "undefined") {
+          this.remoteUnlock = await this.controlRemoteUnlockCommand(type);
+        } else {
+          this.remoteUnlock = await this.controlRemoteUnlockCommand();
+        }
+        console.log("========= remoteUnlock:", this.remoteUnlock);
+      }
+    } catch (error) {
+      console.error("Error on remote unlock", error);
+    }
+
+    return this.remoteUnlock;
+  }
+
   private onDataReceived(command: CommandEnvelope) {
     // is this just a notification (like the lock was locked/unlocked etc.)
     if (this.privateData.aesKey) {

@@ -77,6 +77,7 @@ export class NobleDevice extends EventEmitter implements DeviceInterface {
       this.emit("connected");
       return true;
     }
+    console.log("Peripheral state", this.peripheral.state);
     return false;
   }
 

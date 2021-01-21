@@ -1,15 +1,17 @@
 'use strict';
 
 import { EventEmitter } from "events";
-import ReconnectingWebSocket, { Event } from "reconnecting-websocket";
+import ReconnectingWebSocket from "reconnecting-websocket";
 import WebSocket from "ws";
 import CryptoJS from "crypto-js";
+import chalk from "chalk";
 
 type Peripheral = {
   uuid: string,
   address: string,
   advertisement?: any,
-  rssi: number
+  rssi: number,
+  connected: boolean
 }
 
 type WsAdvertisement = {
@@ -44,6 +46,9 @@ type WsEvent = {
 
 export class NobleWebsocketBinding extends EventEmitter {
   private ws: ReconnectingWebSocket;
+  private auth: boolean;
+  private wasReady: boolean;
+  private buffer: any[];
   private startScanCommand: any | null;
   private peripherals: Map<string, Peripheral>;
   private aesKey: CryptoJS.lib.WordArray;
@@ -54,11 +59,13 @@ export class NobleWebsocketBinding extends EventEmitter {
 
     this.aesKey = CryptoJS.enc.Hex.parse(key);
     this.credentials = user + ':' + pass;
-
-    this.ws = new ReconnectingWebSocket(`ws://${address}:${port}/noble`, [], {WebSocket: WebSocket});
-
+    this.auth = false;
+    this.wasReady = false;
+    this.buffer = [];
     this.startScanCommand = null;
     this.peripherals = new Map();
+
+    this.ws = new ReconnectingWebSocket(`ws://${address}:${port}/noble`, [], { WebSocket: WebSocket });
 
     this.on('message', this.onMessage.bind(this));
 
@@ -69,7 +76,7 @@ export class NobleWebsocketBinding extends EventEmitter {
     this.ws.onmessage = (event: any) => {
       try {
         if (process.env.WEBSOCKET_DEBUG == "1") {
-          console.log("Received:", event.data.toString());
+          console.log("Received: " + chalk.green(event.data.toString()));
         }
         this.emit('message', JSON.parse(event.data.toString()));
       } catch (error) {
@@ -83,12 +90,19 @@ export class NobleWebsocketBinding extends EventEmitter {
   }
 
   private onOpen() {
-    console.log('on -> open');
+    console.log(chalk.green('Websocket connected'));
   }
 
   private onClose() {
-    console.log('on -> close');
-    this.emit('stateChange', 'poweredOff');
+    this.auth = false;
+    console.log(chalk.red('Websocket disconnected'));
+    // this.emit('stateChange', 'poweredOff');
+    for(const [peripheralUuid, peripheral] of this.peripherals) {
+      if (peripheral.connected) {
+        peripheral.connected = false;
+        this.emit('disconnect', peripheralUuid);
+      }
+    }
   }
 
   private onMessage(event: WsEvent) {
@@ -129,8 +143,23 @@ export class NobleWebsocketBinding extends EventEmitter {
         });
       }
     } else if (type === 'stateChange') {
-      console.log(state);
-      this.emit('stateChange', state);
+      if (state == "poweredOn" && !this.auth) {
+        this.auth = true;
+        if (this.buffer.length > 0) {
+          if (process.env.WEBSOCKET_DEBUG == "1") {
+            console.log("Sending buffered commands", this.buffer);
+          }
+          for (let command of this.buffer) {
+            this.sendCommand(command);
+          }
+          this.buffer = [];
+        }
+      }
+      if (!this.wasReady) {
+        // only send state change once after the initial connection
+        this.wasReady = true;
+        this.emit('stateChange', state);
+      }
     } else if (type === 'discover') {
       if (typeof advertisement != "undefined") {
         const advertisementObj = {
@@ -141,18 +170,28 @@ export class NobleWebsocketBinding extends EventEmitter {
           serviceData: (advertisement.serviceData ? Buffer.from(advertisement.serviceData, 'hex') : null)
         };
 
-        this.peripherals.set(peripheralUuid, {
+        let peripheral: Peripheral = {
           uuid: peripheralUuid,
           address: address,
           advertisement: advertisementObj,
-          rssi: rssi
-        });
+          rssi: rssi,
+          connected: false
+        };
+        this.peripherals.set(peripheralUuid, peripheral);
 
         this.emit('discover', peripheralUuid, address, addressType, connectable, advertisementObj, rssi);
       }
     } else if (type === 'connect') {
+      const peripheral = this.peripherals.get(peripheralUuid);
+      if (typeof peripheral != "undefined") {
+        peripheral.connected = true;
+      }
       this.emit('connect', peripheralUuid);
     } else if (type === 'disconnect') {
+      const peripheral = this.peripherals.get(peripheralUuid);
+      if (typeof peripheral != "undefined") {
+        peripheral.connected = false;
+      }
       this.emit('disconnect', peripheralUuid);
     } else if (type === 'rssiUpdate') {
       this.emit('rssiUpdate', peripheralUuid, rssi);
@@ -186,23 +225,18 @@ export class NobleWebsocketBinding extends EventEmitter {
   }
 
   private sendCommand(command: any, errorCallback?: any) {
-    const message = JSON.stringify(command);
-    this.ws.send(message);
-    if (process.env.WEBSOCKET_DEBUG == "1") {
-      console.log("Sent:", message);
+    if (!this.auth && command.action != "auth") {
+      if (process.env.WEBSOCKET_DEBUG == "1") {
+        console.log('Buffering command', command);
+      }
+      this.buffer.push(command);
+    } else {
+      const message = JSON.stringify(command);
+      this.ws.send(message);
+      if (process.env.WEBSOCKET_DEBUG == "1") {
+        console.log("Sent:    " + chalk.cyan(message));
+      }
     }
-    // , error => {
-    //   if (error != null) {
-    //     console.warn('could not send command', command, error);
-    //     if (typeof errorCallback === 'function') {
-    //       errorCallback(error);
-    //     }
-    //   } else {
-    //     if (process.env.WEBSOCKET_DEBUG == "1") {
-    //       console.log("Sent:", message);
-    //     }
-    //   }
-    // });
   }
 
   startScanning(serviceUuids: string[], allowDuplicates: boolean = true) {
