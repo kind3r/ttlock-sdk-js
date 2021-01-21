@@ -68,6 +68,7 @@ export class CommandEnvelope {
     const crc = CodecUtils.crccompute(rawData.slice(0, rawData.length - 1));
     const dataCrc = rawData.readUInt8(rawData.length - 1);
     if (dataCrc != crc) {
+      console.log("Bad CRC should be " + crc + " and we got " + dataCrc);
       command.crcok = false;
     }
     command.generateLockType();
@@ -172,6 +173,9 @@ export class CommandEnvelope {
   }
 
   isCrcOk(): boolean {
+    if (process.env.TTLOCK_IGNORE_CRC == "1") {
+      return true;
+    }
     return this.crcok;
   }
 

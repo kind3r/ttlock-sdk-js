@@ -11,7 +11,9 @@ type Peripheral = {
   address: string,
   advertisement?: any,
   rssi: number,
-  connected: boolean
+  connected: boolean,
+  connecting: boolean,
+  bufferedConnect: boolean
 }
 
 type WsAdvertisement = {
@@ -100,7 +102,14 @@ export class NobleWebsocketBinding extends EventEmitter {
     for(const [peripheralUuid, peripheral] of this.peripherals) {
       if (peripheral.connected) {
         peripheral.connected = false;
+        console.log('Disconnect', peripheralUuid);
         this.emit('disconnect', peripheralUuid);
+      }
+      if (peripheral.connecting && !peripheral.bufferedConnect)  {
+        // add re-connect to buffer
+        peripheral.connecting = false;
+        peripheral.bufferedConnect = true;
+        this.connect(peripheralUuid);
       }
     }
   }
@@ -175,7 +184,9 @@ export class NobleWebsocketBinding extends EventEmitter {
           address: address,
           advertisement: advertisementObj,
           rssi: rssi,
-          connected: false
+          connected: false,
+          connecting: false,
+          bufferedConnect: false
         };
         this.peripherals.set(peripheralUuid, peripheral);
 
@@ -185,12 +196,16 @@ export class NobleWebsocketBinding extends EventEmitter {
       const peripheral = this.peripherals.get(peripheralUuid);
       if (typeof peripheral != "undefined") {
         peripheral.connected = true;
+        peripheral.connecting = false;
+        peripheral.bufferedConnect = false;
       }
       this.emit('connect', peripheralUuid);
     } else if (type === 'disconnect') {
       const peripheral = this.peripherals.get(peripheralUuid);
       if (typeof peripheral != "undefined") {
         peripheral.connected = false;
+        peripheral.connecting = false;
+        peripheral.bufferedConnect = false;
       }
       this.emit('disconnect', peripheralUuid);
     } else if (type === 'rssiUpdate') {
@@ -263,7 +278,8 @@ export class NobleWebsocketBinding extends EventEmitter {
   connect(deviceUuid: string) {
     const peripheral = this.peripherals.get(deviceUuid);
 
-    if (typeof peripheral != "undefined") {
+    if (typeof peripheral != "undefined" && !peripheral.connected && !peripheral.connecting) {
+      peripheral.connecting = true;
       this.sendCommand({
         action: 'connect',
         peripheralUuid: peripheral.uuid

@@ -191,11 +191,7 @@ export class TTBluetoothDevice extends TTDevice implements TTBluetoothDevice {
             } while (typeof response == "undefined" || (!response.isCrcOk() && !ignoreCrc && retry <= 2));
             this.waitingForResponse = false;
             if (!response.isCrcOk() && !ignoreCrc) {
-              if (process.env.TTLOCK_IGNORE_CRC == "1") {
-                console.error("Malformed response, bad CRC, ignoring");
-              } else {
-                throw new Error("Malformed response, bad CRC");
-              }
+              throw new Error("Malformed response, bad CRC");
             }
             return response;
           } else {

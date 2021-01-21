@@ -74,6 +74,7 @@ export class TTLock extends TTLockApi implements TTLock {
 
   async connect(skipDataRead: boolean = false, timeout: number = 15): Promise<boolean> {
     if (this.connecting) {
+      console.log("Connect allready in progress");
       return false;
     }
     if (this.connected) {
