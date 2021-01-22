@@ -117,6 +117,13 @@ export class TTLock extends TTLockApi implements TTLock {
     }
   }
 
+  hasLockSound(): boolean {
+    if (typeof this.featureList != "undefined" && this.featureList.has(FeatureValue.AUDIO_MANAGEMENT)) {
+      return true;
+    }
+    return false;
+  }
+
   hasPassCode(): boolean {
     if (typeof this.featureList != "undefined" && this.featureList.has(FeatureValue.PASSCODE)) {
       return true;
@@ -452,6 +459,65 @@ export class TTLock extends TTLockApi implements TTLock {
           } catch (error) {
             console.error(error);
           }
+        }
+      }
+    }
+
+    return false;
+  }
+
+  async getLockSound(noCache: boolean = false): Promise<AudioManage> {
+    if (!this.initialized) {
+      throw new Error("Lock is in pairing mode");
+    }
+
+    const oldSound = this.lockSound;
+
+    if (noCache || this.lockSound == AudioManage.UNKNOWN) {
+      if (typeof this.featureList != "undefined" && this.featureList.has(FeatureValue.AUDIO_MANAGEMENT)) {
+        if (!this.isConnected()) {
+          throw new Error("Lock is not connected");
+        }
+  
+        try {
+            console.log("========= lockSound");
+            this.lockSound = await this.audioManageCommand();
+            console.log("========= lockSound:", this.lockSound);
+  
+        } catch (error) {
+          console.error("Error getting lock sound status", error);
+        }
+      }
+    }
+
+    if (oldSound != this.lockSound) {
+      this.emit("lockUpdated", this);
+    }
+
+    return this.lockSound;
+  }
+
+  async setLockSound(lockSound: AudioManage.TURN_ON | AudioManage.TURN_OFF): Promise<boolean> {
+    if (!this.isConnected()) {
+      throw new Error("Lock is not connected");
+    }
+
+    if (!this.initialized) {
+      throw new Error("Lock is in pairing mode");
+    }
+
+    if (this.lockSound != lockSound) {
+      if (typeof this.featureList != "undefined" && this.featureList.has(FeatureValue.AUDIO_MANAGEMENT)) {
+        try {
+          if (await this.macro_adminLogin()) {
+            console.log("========= lockSound");
+            this.lockSound = await this.audioManageCommand(lockSound);
+            console.log("========= lockSound:", this.lockSound);
+            this.emit("lockUpdated", this);
+            return true;
+          }
+        } catch (error) {
+          console.error(error);
         }
       }
     }
@@ -1191,8 +1257,14 @@ export class TTLock extends TTLockApi implements TTLock {
           this.lockedStatus = await this.searchBycicleStatusCommand();
           console.log("========= check lock status", this.lockedStatus);
         }
+
+        if (this.featureList.has(FeatureValue.AUDIO_MANAGEMENT) && this.lockSound == AudioManage.UNKNOWN) {
+          console.log("========= lockSound");
+          this.lockSound = await this.audioManageCommand();
+          console.log("========= lockSound:", this.lockSound);
+        }
       } catch (error) {
-        console.error("Failed reading general data from lock", error);
+        console.error("Failed reading all general data from lock", error);
       }
     } else {
       if (this.device.isUnlock) {

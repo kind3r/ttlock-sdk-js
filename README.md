@@ -144,6 +144,13 @@ Fingerprints are scanned mutiple times during the add process. After scanning yo
 `npm run get-fingerprints` - lists all valid fingerprints and their intervals  
 `npm run clear-fingerprints` - removes all registered fingerprints  
 
+### Lock sound
+
+Disable the anoying beeps.  
+
+`npm run delete-locksound`  
+
+
 ## Credits
 
 - [Valentino Stillhardt (@Fusseldieb)](https://github.com/Fusseldieb) for initial protocol analysis and providing remote access to his lock

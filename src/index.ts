@@ -8,6 +8,7 @@ export { ValidityInfo } from "./api/ValidityInfo";
 export { PassageModeData, KeyboardPassCode, ICCard } from "./api/Commands";
 export { PassageModeType } from "./constant/PassageModeType";
 export { KeyboardPwdType } from "./constant/KeyboardPwdType";
+export { AudioManage } from "./constant/AudioManage";
 
 // extra stuff used in testing
 export * from "./api/Commands";

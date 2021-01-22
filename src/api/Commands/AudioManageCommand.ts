@@ -8,12 +8,14 @@ export class AudioManageCommand extends Command {
   static COMMAND_TYPE: CommandType = CommandType.COMM_AUDIO_MANAGE;
   private opType: AudioManage.QUERY | AudioManage.MODIFY = AudioManage.QUERY;
   private opValue?: AudioManage.TURN_ON | AudioManage.TURN_OFF; // lockData.lockSound
+  private batteryCapacity?: number;
 
   protected processData(): void {
     if (this.commandData && this.commandData.length >= 3) {
+      this.batteryCapacity = this.commandData.readUInt8(0);
       this.opType = this.commandData.readUInt8(1);
-      if (this.opType == AudioManage.QUERY && this.commandData.length > 1) {
-        this.opValue = this.commandData.readUInt8(1);
+      if (this.opType == AudioManage.QUERY) {
+        this.opValue = this.commandData.readUInt8(2);
       }
     }
   }
@@ -34,8 +36,16 @@ export class AudioManageCommand extends Command {
   }
 
   getValue(): AudioManage.TURN_ON | AudioManage.TURN_OFF | void {
-    if (this.opValue) {
+    if (typeof this.opValue != "undefined") {
       return this.opValue;
+    }
+  }
+
+  getBatteryCapacity(): number {
+    if (typeof this.batteryCapacity != "undefined") {
+      return this.batteryCapacity;
+    } else {
+      return -1;
     }
   }
 }

@@ -56,7 +56,7 @@ export abstract class TTLockApi extends EventEmitter {
   // discoverable stuff
   protected featureList?: Set<FeatureValue>;
   protected switchState?: any;
-  protected lockSound?: AudioManage.TURN_ON | AudioManage.TURN_OFF
+  protected lockSound: AudioManage.TURN_ON | AudioManage.TURN_OFF | AudioManage.UNKNOWN;
   protected displayPasscode?: 0 | 1;
   protected autoLockTime: number;
   protected batteryCapacity: number;
@@ -79,6 +79,7 @@ export abstract class TTLockApi extends EventEmitter {
       this.lockedStatus = LockedStatus.LOCKED;
     }
     this.autoLockTime = -1;
+    this.lockSound = AudioManage.UNKNOWN;
     this.batteryCapacity = this.device.batteryCapacity;
     this.rssi = this.device.rssi;
     this.initialized = false; // just workaround for TypeScript
@@ -265,11 +266,12 @@ export abstract class TTLockApi extends EventEmitter {
       if (cmd.getResponse() != CommandResponse.SUCCESS) {
         throw new Error("Failed to set audio mode");
       }
+      this.batteryCapacity = cmd.getBatteryCapacity();
       if (typeof newValue != "undefined") {
         return newValue;
       } else {
         const value = cmd.getValue();
-        if (value) {
+        if (typeof value != "undefined") {
           return value;
         } else {
           throw new Error("Unable to get audioManage value");
