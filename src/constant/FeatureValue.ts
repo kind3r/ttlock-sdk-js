@@ -71,9 +71,9 @@ export enum FeatureValue {
    */
   MAGNETOMETER = 13,
 
-   /**
-   * Support remote unlocking configuration
-   */
+  /**
+  * Support remote unlocking configuration
+  */
   CONFIG_GATEWAY_UNLOCK = 14,
 
   /**
@@ -86,11 +86,11 @@ export enum FeatureValue {
    */
   NB_LOCK = 16,
 
-// /**
-// * Support hotel lock card system
-// */
-// @Deprecated
-// HOTEL_LOCK = 0x20000,
+  // /**
+  // * Support hotel lock card system
+  // */
+  // @Deprecated
+  // HOTEL_LOCK = 0x20000,
 
   /**
    * Support reading the administrator password
@@ -152,9 +152,41 @@ export enum FeatureValue {
   /**
    * Support normally open mode exception
    */
-// PASSAGE_MODE_ = 33,
+  // PASSAGE_MODE_ = 33,
 
   CYCLIC_IC_OR_FINGER_PRINT = 34,
 
+  /**
+   * Support left and right door opening settings
+   */
+  UNLOCK_DIRECTION = 36,
+  /**
+   * Finger vein
+   */
+  FINGER_VEIN = 37,
+
+  /**
+   * Telink Bluetooth chip
+   */
+  TELINK_CHIP = 38,
+
+  /**
+   * Support NB activation configuration
+   */
   NB_ACTIVITE_CONFIGURATION = 39,
+
+  /**
+  * Support cyclic password recovery function
+  */
+  CYCLIC_PASSCODE_CAN_RECOVERY = 40,
+
+  /**
+   * Support wireless key
+   */
+  WIRELESS_KEY_FOB = 41,
+
+  /**
+   * Support reading accessory battery information
+   */
+  ACCESSORY_BATTERY = 42,
 }

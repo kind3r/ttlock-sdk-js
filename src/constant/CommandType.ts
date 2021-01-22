@@ -210,5 +210,10 @@ export enum CommandType {
    */
   COMM_CYCLIC_CMD = 0x70,
 
+  /**
+   * Get accessory battery
+   */
+  COMM_ACCESSORY_BATTERY = 0x74,
+
   COMM_NB_ACTIVATE_CONFIGURATION = 0x13,
 }

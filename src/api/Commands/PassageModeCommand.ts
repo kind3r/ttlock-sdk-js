@@ -7,11 +7,11 @@ import { Command } from "../Command";
 
 export interface PassageModeData {
   type: PassageModeType;
-  /** 1..7 (Monday..Sunday) */
+  /** 1..7 (Monday..Sunday) 0: means ervery day */
   weekOrDay: number;
   /** month repeat */
   month: number;
-  /** HHMM */
+  /** HHMM 0:0 means all day*/
   startHour: string;
   /** HHMM */
   endHour: string;

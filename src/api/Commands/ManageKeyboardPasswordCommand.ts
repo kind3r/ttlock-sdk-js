@@ -18,23 +18,21 @@ export class ManageKeyboardPasswordCommand extends Command {
   private endDate?: moment.Moment;
 
   protected processData(): void {
-    if (this.commandData && this.commandData.length > 0) {
+    if (this.commandData && this.commandData.length > 1) {
       this.opType = this.commandData.readUInt8(1);
     }
   }
 
   build(): Buffer {
-    if (this.opType) {
-      switch (this.opType) {
-        case PwdOperateType.PWD_OPERATE_TYPE_CLEAR:
-          return Buffer.from([this.opType]);
-        case PwdOperateType.PWD_OPERATE_TYPE_ADD:
-          return this.buildAdd();
-        case PwdOperateType.PWD_OPERATE_TYPE_REMOVE_ONE:
-          return this.buildDel();
-        case PwdOperateType.PWD_OPERATE_TYPE_MODIFY:
-          return this.buildEdit();
-      }
+    switch (this.opType) {
+      case PwdOperateType.PWD_OPERATE_TYPE_CLEAR:
+        return Buffer.from([this.opType]);
+      case PwdOperateType.PWD_OPERATE_TYPE_ADD:
+        return this.buildAdd();
+      case PwdOperateType.PWD_OPERATE_TYPE_REMOVE_ONE:
+        return this.buildDel();
+      case PwdOperateType.PWD_OPERATE_TYPE_MODIFY:
+        return this.buildEdit();
     }
     return Buffer.from([]);
   }
@@ -103,7 +101,7 @@ export class ManageKeyboardPasswordCommand extends Command {
   }
 
   private buildAdd(): Buffer {
-    if (this.type && this.passCode && this.startDate && this.endDate) {
+    if (typeof this.type != "undefined" && typeof this.passCode != "undefined" && this.startDate && this.endDate) {
       let data: Buffer;
       if (this.type == KeyboardPwdType.PWD_TYPE_PERMANENT) {
         data = Buffer.alloc(1 + 1 + 1 + this.passCode.length + 5 + 5);
@@ -140,7 +138,7 @@ export class ManageKeyboardPasswordCommand extends Command {
   }
 
   private buildDel(): Buffer {
-    if (this.type && this.oldPassCode) {
+    if (typeof this.type != "undefined" && typeof this.oldPassCode != "undefined") {
       let data: Buffer = Buffer.alloc(1 + 1 + 1 + this.oldPassCode.length);
       let index = 0;
       data.writeUInt8(this.opType, index++);
@@ -158,7 +156,7 @@ export class ManageKeyboardPasswordCommand extends Command {
   }
 
   private buildEdit(): Buffer {
-    if (this.type && this.oldPassCode && this.passCode && this.startDate && this.endDate) {
+    if (typeof this.type != "undefined" && typeof this.oldPassCode != "undefined" && typeof this.passCode != "undefined" && this.startDate && this.endDate) {
       let data: Buffer = Buffer.alloc(1 + 1 + 1 + this.oldPassCode.length + 1 + this.passCode.length + 5 + 5);
       let index = 0;
       data.writeUInt8(this.opType, index++);
