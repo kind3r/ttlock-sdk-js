@@ -454,6 +454,7 @@ export class TTLock extends TTLockApi implements TTLock {
               await this.searchAutoLockTimeCommand(autoLockTime);
               console.log("========= autoLockTime");
               this.autoLockTime = autoLockTime;
+              this.emit("lockUpdated", this);
               return true;
             }
           } catch (error) {
