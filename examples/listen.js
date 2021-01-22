@@ -41,6 +41,11 @@ async function doStuff() {
     console.log();
     
     if (lock.isInitialized() && lock.isPaired()) {
+      lock.on("disconnected", () => {
+        setTimeout(() => {
+          lock.connect();
+        }, 3000);
+      });
       await lock.connect();
       console.log("Connected to a known lock");
       console.log();

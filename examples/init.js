@@ -34,10 +34,10 @@ async function doStuff() {
 
   const client = new TTLockClient(options);
   await client.prepareBTService();
-  for (let i = 10; i > 0; i--) {
-    console.log("Starting scan...", i);
-    await sleep(1000);
-  }
+  // for (let i = 10; i > 0; i--) {
+  //   console.log("Starting scan...", i);
+  //   await sleep(1000);
+  // }
   client.startScanLock();
   console.log("Scan started");
   client.on("foundLock", async (lock) => {
