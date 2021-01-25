@@ -57,10 +57,15 @@ export class TTBluetoothDevice extends TTDevice implements TTBluetoothDevice {
       if (await this.device.connect()) {
         // TODO: something happens here (disconnect) and it's stuck in limbo
         await this.readBasicInfo();
-        await this.subscribe();
-        this.connected = true;
-        this.emit("connected");
-        return true;
+        const subscribed = await this.subscribe();
+        if (!subscribed) {
+          await this.device.disconnect();
+          return false;
+        } else {
+          this.connected = true;
+          this.emit("connected");
+          return true;
+        }
       } else {
         console.log("Connect failed");
       }
@@ -109,7 +114,7 @@ export class TTBluetoothDevice extends TTDevice implements TTBluetoothDevice {
     }
   }
 
-  private async subscribe() {
+  private async subscribe(): Promise<boolean> {
     if (typeof this.device != "undefined") {
       let service: ServiceInterface | undefined;
       if (this.device.services.has("1910")) {
@@ -126,14 +131,16 @@ export class TTBluetoothDevice extends TTDevice implements TTBluetoothDevice {
             // await characteristic.discoverDescriptors();
             // const descriptor = characteristic.descriptors.get("2902");
             // if (typeof descriptor != "undefined") {
-            //   console.log("Subscribing to descriptor notifications");
-            //   await descriptor.writeValue(Buffer.from([0x01, 0x00])); // BE
-            //   // await descriptor.writeValue(Buffer.from([0x00, 0x01])); // LE
-            // }
+              //   console.log("Subscribing to descriptor notifications");
+              //   await descriptor.writeValue(Buffer.from([0x01, 0x00])); // BE
+              //   // await descriptor.writeValue(Buffer.from([0x00, 0x01])); // LE
+              // }
+            return true;
           }
         }
       }
     }
+    return false;
   }
 
   async sendCommand(command: CommandEnvelope, waitForResponse: boolean = true, ignoreCrc: boolean = false): Promise<CommandEnvelope | void> {
