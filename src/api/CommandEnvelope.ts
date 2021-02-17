@@ -36,7 +36,7 @@ export class CommandEnvelope {
     }
     command.header = rawData.subarray(0, 2);
     command.protocol_type = rawData.readInt8(2);
-    if (command.protocol_type >= 5) { //New agreement 
+    if (command.protocol_type >= 5 || command.protocol_type == 0) { //New agreement 
       if (rawData.length < 13) {
         throw new Error("New agreement data too short");
       }
