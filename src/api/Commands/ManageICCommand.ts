@@ -71,7 +71,7 @@ export class ManageICCommand extends Command {
               if (len == 4 || this.commandData.readUInt32BE(this.commandData.length - 5).toString(16) == 'ffffffff') {
                 this.cardNumber = this.commandData.readUInt32BE(3).toString();
               } else {
-                this.cardNumber = this.commandData?.readBigUInt64BE(3).toString();
+                this.cardNumber = this.commandData.readBigUInt64BE(3).toString();
               }
               break;
             case ICOperate.STATUS_ENTER_ADD_MODE:
