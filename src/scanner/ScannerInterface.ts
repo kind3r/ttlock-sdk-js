@@ -17,8 +17,9 @@ export type ScannerStateType = "unknown" | "starting" | "scanning" | "stopping" 
 
 export interface ScannerInterface extends EventEmitter {
   scannerState: ScannerStateType;
-  startScan(): Promise<boolean>;
+  startScan(passive: boolean): Promise<boolean>;
   stopScan(): Promise<boolean>;
+  getState(): ScannerStateType;
   on(event: "ready", listener: () => void): this;
   on(event: "discover", listener: (device: DeviceInterface) => void): this;
   on(event: "scanStart", listener: () => void): this;

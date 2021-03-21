@@ -1,6 +1,6 @@
 {
   "name": "ttlock-sdk-js",
-  "version": "0.2.42",
+  "version": "0.3.1",
   "description": "JavaScript port of the TTLock Android SDK",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -34,9 +34,10 @@
     "listen": "npm run build && node --trace-warnings ./examples/listen.js",
     "set-remoteunlock": "npm run build && node ./examples/setRemoteUnlock.js",
     "delete-locksound": "npm run build && node ./examples/deleteLockSound.js",
+    "get-operations": "npm run build && node ./examples/getOperations.js",
     "debug-tool": "npm run build && NOBLE_REPORT_ALL_HCI_EVENTS=1 node ./tools/debug.js",
     "server-tool": "NOBLE_REPORT_ALL_HCI_EVENTS=1 node ./tools/server.js",
-    "dump-tool": "node ./tools/dumpCapture.js"
+    "dump-tool": "npm run build && node ./tools/dumpCapture.js"
   },
   "repository": {
     "type": "git",

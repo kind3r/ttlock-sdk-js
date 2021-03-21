@@ -125,7 +125,10 @@ export class OperationLogCommand extends Command {
             case LogOperate.OPERATE_TYPE_DELETE_FR_SUCCEED:
             case LogOperate.FR_LOCK:
             case LogOperate.FR_UNLOCK_FAILED_LOCK_REVERSE:
-              log.password = this.commandData.readBigUInt64BE(index).toString();
+              log.password = Buffer.concat([
+                Buffer.from([0, 0]),
+                this.commandData.slice(index, index + 6)
+              ]).readBigInt64BE().toString();
               index += 6;
               if (index < recStart + recLen) {
                 pwdLen = recLen - (index - recStart); // what's left
@@ -166,7 +169,7 @@ export class OperationLogCommand extends Command {
       this.sequence = 0xffff;
     }
     let data = Buffer.alloc(2);
-    data.writeInt16BE(this.sequence);
+    data.writeUInt16BE(this.sequence);
     return data;
   }
 

@@ -101,6 +101,20 @@ export class TTLockClient extends events.EventEmitter implements TTLockClient {
     return true;
   }
 
+  async startMonitor(): Promise<boolean> {
+    if (this.bleService != null) {
+      return await this.bleService.startScan(true);
+    }
+    return false;
+  }
+
+  isScanning(): boolean {
+    if (this.bleService) {
+      return this.bleService.isScanning();
+    }
+    return false;
+  }
+
   getLockData(): TTLockData[] {
     const lockData: TTLockData[] = [];
     this.lockData.forEach((lock) => {

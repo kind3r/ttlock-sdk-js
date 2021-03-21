@@ -23,6 +23,7 @@ export class CommandEnvelope {
   private lockType: LockType = LockType.UNKNOWN;
   private aesKey?: Buffer;
   private command?: Command;
+  private crc: number = -1;
   private crcok: boolean = true;
 
   /**
@@ -66,9 +67,9 @@ export class CommandEnvelope {
     }
     // check CRC
     const crc = CodecUtils.crccompute(rawData.slice(0, rawData.length - 1));
-    const dataCrc = rawData.readUInt8(rawData.length - 1);
-    if (dataCrc != crc) {
-      console.log("Bad CRC should be " + crc + " and we got " + dataCrc);
+    command.crc = rawData.readUInt8(rawData.length - 1);
+    if (command.crc != crc) {
+      console.log("Bad CRC should be " + crc + " and we got " + command.crc);
       command.crcok = false;
     }
     command.generateLockType();
@@ -172,6 +173,10 @@ export class CommandEnvelope {
     }
   }
 
+  getCrc(): number {
+    return this.crc;
+  }
+
   isCrcOk(): boolean {
     if (process.env.TTLOCK_IGNORE_CRC == "1") {
       return true;
@@ -263,5 +268,15 @@ export class CommandEnvelope {
         this.command = commandFromType(this.commandType);
       }
     }
+  }
+
+  clearLockData() {
+    this.lockType = 0;
+    this.protocol_type = 0;
+    this.sub_version = 0;
+    this.scene = 0;
+    this.organization = 0;
+    this.sub_organization = 0;
+    this.encrypt = 0x55;
   }
 }

@@ -42,12 +42,16 @@ export class BluetoothLeService extends EventEmitter implements BluetoothLeServi
     this.scanner.on("scanStop", () => this.emit("scanStop"));
   }
 
-  async startScan(): Promise<boolean> {
-    return await this.scanner.startScan();
+  async startScan(passive: boolean = false): Promise<boolean> {
+    return await this.scanner.startScan(passive);
   }
 
   async stopScan(): Promise<boolean> {
     return await this.scanner.stopScan();
+  }
+
+  isScanning(): boolean {
+    return this.scanner.getState() == "scanning";
   }
 
   private onDiscover(btDevice: DeviceInterface) {
@@ -56,11 +60,11 @@ export class BluetoothLeService extends EventEmitter implements BluetoothLeServi
     if(this.btDevices.has(btDevice.id)) {
       const device = this.btDevices.get(btDevice.id);
       if (typeof device != 'undefined') {
-        device.updateFromDevice();
+        device.updateFromDevice(btDevice);
         this.emit("discover", device);
       }
     } else {
-      const device = TTBluetoothDevice.createFromDevice(btDevice);
+      const device = TTBluetoothDevice.createFromDevice(btDevice, this.scanner);
       this.btDevices.set(btDevice.id, device);
       this.emit("discover", device);
     }

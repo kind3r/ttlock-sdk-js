@@ -38,11 +38,12 @@ export class NobleScanner extends EventEmitter implements ScannerInterface {
     return this.scannerState;
   }
 
-  async startScan(): Promise<boolean> {
+  async startScan(passive: boolean): Promise<boolean> {
     if (this.scannerState == "unknown" || this.scannerState == "stopped") {
       if (this.nobleState == "poweredOn") {
         this.scannerState = "starting";
-        return await this.startNobleScan();
+        // Fake passive mode using allowDuplicates for gateway only
+        return await this.startNobleScan(passive);
       } else {
         return false;
       }
@@ -58,10 +59,10 @@ export class NobleScanner extends EventEmitter implements ScannerInterface {
     return false;
   }
 
-  private async startNobleScan(): Promise<boolean> {
+  private async startNobleScan(allowDuplicates: boolean = true): Promise<boolean> {
     try {
       if (typeof this.noble != "undefined") {
-        await this.noble.startScanningAsync(this.uuids, false);
+        await this.noble.startScanningAsync(this.uuids, allowDuplicates);
         this.scannerState = "scanning";
         return true;
       }
@@ -104,15 +105,35 @@ export class NobleScanner extends EventEmitter implements ScannerInterface {
     if (!this.devices.has(peripheral.id)) {
       const nobleDevice = new NobleDevice(peripheral);
       this.devices.set(peripheral.id, nobleDevice);
-      this.emit("discover", nobleDevice);
+      if (this.checkPeripheralAdvertisement(peripheral)) {
+        this.emit("discover", nobleDevice);
+      }
     } else {
       //if the device was already found, maybe advertisement has changed
       let nobleDevice = this.devices.get(peripheral.id);
       if (typeof nobleDevice != "undefined") {
         nobleDevice.updateFromPeripheral();
-        this.emit("discover", nobleDevice);
+        if (this.checkPeripheralAdvertisement(peripheral)) {
+          this.emit("discover", nobleDevice);
+        }
       }
     }
+  }
+
+  protected checkPeripheralAdvertisement(peripheral: nobleObj.Peripheral): boolean {
+    if (typeof this.uuids == "undefined" || this.uuids.length == 0) {
+      return true;
+    }
+
+    if (typeof peripheral.advertisement != "undefined" && typeof peripheral.advertisement.serviceUuids != "undefined" && peripheral.advertisement.serviceUuids.length > 0) {
+      // console.log(peripheral.advertisement.serviceUuids);
+      for(let service of peripheral.advertisement.serviceUuids) {
+        if (this.uuids.indexOf(service.replace('0x', '')) != -1) {
+          return true;
+        }
+      }
+    }
+    return false;
   }
 
   protected onNobleScanStart(): void {

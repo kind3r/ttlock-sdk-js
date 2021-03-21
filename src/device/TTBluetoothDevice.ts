@@ -3,8 +3,9 @@
 import { CommandEnvelope } from "../api/CommandEnvelope";
 import { LockType, LockVersion } from "../constant/Lock";
 import { CharacteristicInterface, DeviceInterface, ServiceInterface } from "../scanner/DeviceInterface";
+import { ScannerInterface } from "../scanner/ScannerInterface";
 import { sleep } from "../util/timingUtil";
-import { TTDevice } from "./TTDevice";
+import { TTDevice, TTDeviceParams } from "./TTDevice";
 
 const CRLF = "0d0a";
 const MTU = 20;
@@ -13,21 +14,24 @@ export interface TTBluetoothDevice {
   on(event: "connected", listener: () => void): this;
   on(event: "disconnected", listener: () => void): this;
   on(event: "dataReceived", listener: (command: CommandEnvelope) => void): this;
+  on(event: "paramsChanged", listener: (params: TTDeviceParams) => void): this;
 }
 
 export class TTBluetoothDevice extends TTDevice implements TTBluetoothDevice {
   device?: DeviceInterface;
   connected: boolean = false;
   incomingDataBuffer: Buffer = Buffer.from([]);
+  private scanner: ScannerInterface;
   private waitingForResponse: boolean = false;
   private responses: CommandEnvelope[] = [];
 
-  private constructor() {
+  private constructor(scanner: ScannerInterface) {
     super();
+    this.scanner = scanner;
   }
 
-  static createFromDevice(device: DeviceInterface): TTBluetoothDevice {
-    const bDevice = new TTBluetoothDevice();
+  static createFromDevice(device: DeviceInterface, scanner: ScannerInterface): TTBluetoothDevice {
+    const bDevice = new TTBluetoothDevice(scanner);
     bDevice.updateFromDevice(device);
     return bDevice;
   }
@@ -54,6 +58,8 @@ export class TTBluetoothDevice extends TTDevice implements TTBluetoothDevice {
 
   async connect(): Promise<boolean> {
     if (typeof this.device != "undefined" && this.device.connectable) {
+      // stop scan
+      await this.scanner.stopScan();
       if (await this.device.connect()) {
         // TODO: something happens here (disconnect) and it's stuck in limbo
         await this.readBasicInfo();
@@ -131,10 +137,10 @@ export class TTBluetoothDevice extends TTDevice implements TTBluetoothDevice {
             // await characteristic.discoverDescriptors();
             // const descriptor = characteristic.descriptors.get("2902");
             // if (typeof descriptor != "undefined") {
-              //   console.log("Subscribing to descriptor notifications");
-              //   await descriptor.writeValue(Buffer.from([0x01, 0x00])); // BE
-              //   // await descriptor.writeValue(Buffer.from([0x00, 0x01])); // LE
-              // }
+            //   console.log("Subscribing to descriptor notifications");
+            //   await descriptor.writeValue(Buffer.from([0x01, 0x00])); // BE
+            //   // await descriptor.writeValue(Buffer.from([0x00, 0x01])); // LE
+            // }
             return true;
           }
         }
@@ -164,6 +170,7 @@ export class TTBluetoothDevice extends TTDevice implements TTBluetoothDevice {
         if (typeof characteristic != "undefined") {
           if (waitForResponse) {
             let retry = 0;
+            let crcs: number[] = [];
             let response: CommandEnvelope | undefined;
             this.waitingForResponse = true;
             do {
@@ -194,11 +201,23 @@ export class TTBluetoothDevice extends TTDevice implements TTBluetoothDevice {
                 throw new Error("Disconnected while waiting for response");
               }
               response = this.responses.pop();
+              if (typeof response != "undefined") {
+                crcs.push(response.getCrc());
+              }
               retry++;
             } while (typeof response == "undefined" || (!response.isCrcOk() && !ignoreCrc && retry <= 2));
             this.waitingForResponse = false;
             if (!response.isCrcOk() && !ignoreCrc) {
-              throw new Error("Malformed response, bad CRC");
+              // check if all CRCs match and auto-ignore bad CRC
+              if (crcs.length > 1) {
+                for (let i = 1; i < crcs.length; i++) {
+                  if (crcs[i-1] != crcs[i]) {
+                    throw new Error("Malformed response, bad CRC");
+                  }
+                }
+              } else {
+                throw new Error("Malformed response, bad CRC");
+              }
             }
             return response;
           } else {
@@ -370,8 +389,29 @@ export class TTBluetoothDevice extends TTDevice implements TTBluetoothDevice {
         }
       }
     }
+
     const params = manufacturerData.readInt8(offset);
+
+    // track changes in some parameters between device advertisements
+    let oldVal: any;
+    let paramsChanged: TTDeviceParams = {
+      isUnlock: false,
+      hasEvents: false,
+      batteryCapacity: false,
+    };
+
+    oldVal = this.isUnlock;
     this.isUnlock = ((params & 0x1) == 0x1);
+    if (oldVal != this.isUnlock) {
+      paramsChanged.isUnlock = true;
+    }
+
+    oldVal = this.hasEvents;
+    this.hasEvents = ((params & 0x2) == 0x2);
+    if (this.hasEvents && !oldVal) {
+      paramsChanged.hasEvents = true;
+    }
+
     this.isSettingMode = ((params & 0x4) != 0x0);
     if (LockVersion.getLockType(this) == LockType.LOCK_TYPE_V3 || LockVersion.getLockType(this) == LockType.LOCK_TYPE_V3_CAR) {
       this.isTouch = ((params && 0x8) != 0x0);
@@ -381,19 +421,25 @@ export class TTBluetoothDevice extends TTDevice implements TTBluetoothDevice {
     }
     if (this.isLockcar) {
       if (this.isUnlock) {
-        if ((params & 0x10) == 0x1) {
+        if ((params & 0x10) == 0x10) {
           this.parkStatus = 3;
         } else {
           this.parkStatus = 2;
         }
-      } else if ((params & 0x10) == 0x1) {
+      } else if ((params & 0x10) == 0x10) {
         this.parkStatus = 1;
       } else {
         this.parkStatus = 0;
       }
     }
     offset++;
+
+    oldVal = this.batteryCapacity;
     this.batteryCapacity = manufacturerData.readInt8(offset);
+    if (oldVal != this.batteryCapacity) {
+      paramsChanged.batteryCapacity = true;
+    }
+
     // offset += 3 + 4; // Offset in original SDK is + 3, but in scans it's actually +4
     offset = manufacturerData.length - 6; // let's just get the last 6 bytes
     const macBuf = manufacturerData.slice(offset, offset + 6);
@@ -403,7 +449,12 @@ export class TTBluetoothDevice extends TTDevice implements TTBluetoothDevice {
     });
     macArr.reverse();
     this.address = macArr.join(':').toUpperCase();
+
+    if (paramsChanged.isUnlock || paramsChanged.hasEvents || paramsChanged.batteryCapacity) {
+      // console.log("Emiting paramsChanged");
+      this.emit("paramsChanged", paramsChanged);
+    } else {
+      // console.log("Nothing changed");
+    }
   }
-
-
 }

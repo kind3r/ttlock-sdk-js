@@ -26,12 +26,12 @@ Feeling generous and want to support my work, here is [my PayPal link](https://p
 - [X] add/edit/remove keyboard passwords (PIN codes)
 - [X] add/edit/remove fingerprints
 - [X] add/edit/remove IC Cards 
+- [X] get operation log
 
 ## Planned development
 - [ ] add some logger to separate debug events from normal ones
 - [ ] proper timezone support
 - [ ] cyclic based validity setup for credentials (ex.: Mo-Fr from 9AM to 5PM)
-- [ ] get open/close logs
 - [ ] API documentation
 - [ ] receive lock/unlock events*
 
@@ -41,7 +41,7 @@ Feeling generous and want to support my work, here is [my PayPal link](https://p
 - Pairing the lock can sometimes fail. It is recommended to pair the lock before installing it on the door so you can use the button on the back to factory reset it.
 - BLE signal is generaly bad, at least combined with the PI 3. Sometimes commands fail because of this (presumption).
 - Editing validity intervals of fingerprints and IC Cards does not work. *Perhaps it is required to remove and re-add*.
-- Some commands always have a bad CRC.
+- Some commands always have a bad CRC (added option to auto-ignore bad CRC if all 3 retry attempts have the same result).
 - The SDK only works with locks that use the V3 protocol for communication.
 
 ## Gateway option
@@ -150,6 +150,11 @@ Disable the anoying beeps.
 
 `npm run delete-locksound`  
 
+### Operation log
+
+Get the log of operations from the lock (lock, unlock, add/edit/remove credentials etc.).
+
+`npm run get-operations`
 
 ## Credits
 

@@ -20,7 +20,7 @@ import {
   UnlockDataInterface, UnlockCommand, LockCommand,
   PassageModeCommand, PassageModeData, SearchBicycleStatusCommand,
   ManageKeyboardPasswordCommand, GetKeyboardPasswordsCommand, KeyboardPassCode,
-  ICCard, ManageICCommand, ManageFRCommand, Fingerprint
+  ICCard, ManageICCommand, ManageFRCommand, Fingerprint, LogEntry, OperationLogCommand
 } from "../api/Commands";
 import { PassageModeOperate } from "../constant/PassageModeOperate";
 import { AdminType } from "./AdminType";
@@ -49,9 +49,15 @@ export interface FingerprintResponse {
   data: Fingerprint[];
 }
 
+export interface OperationLogResponse {
+  sequence: number;
+  data: LogEntry[];
+}
+
 export abstract class TTLockApi extends EventEmitter {
   protected initialized: boolean;
   protected device: TTBluetoothDevice;
+  protected adminAuth: boolean = false;
 
   // discoverable stuff
   protected featureList?: Set<FeatureValue>;
@@ -64,6 +70,7 @@ export abstract class TTLockApi extends EventEmitter {
   protected lightingTime?: number;
   protected remoteUnlock?: ConfigRemoteUnlock.OP_OPEN | ConfigRemoteUnlock.OP_CLOSE;
   protected lockedStatus: LockedStatus;
+  protected newEvents: boolean;
   protected deviceInfo?: DeviceInfoType;
 
   // sensitive data
@@ -78,6 +85,7 @@ export abstract class TTLockApi extends EventEmitter {
     } else {
       this.lockedStatus = LockedStatus.LOCKED;
     }
+    this.newEvents = this.device.hasEvents;
     this.autoLockTime = -1;
     this.lockSound = AudioManage.UNKNOWN;
     this.batteryCapacity = this.device.batteryCapacity;
@@ -1240,6 +1248,34 @@ export abstract class TTLockApi extends EventEmitter {
     }
   }
 
+  protected async getOperationLogCommand(sequence: number = 0xffff, aesKey?: Buffer): Promise<OperationLogResponse> {
+    if (typeof aesKey == "undefined") {
+      if (this.privateData.aesKey) {
+        aesKey = this.privateData.aesKey;
+      } else {
+        throw new Error("No AES key for lock");
+      }
+    }
+    const requestEnvelope = CommandEnvelope.createFromLockType(this.device.lockType, aesKey);
+    requestEnvelope.setCommandType(CommandType.COMM_GET_OPERATE_LOG);
+    let cmd = requestEnvelope.getCommand() as OperationLogCommand;
+    cmd.setSequence(sequence);
+    const responseEnvelope = await this.device.sendCommand(requestEnvelope);
+    if (responseEnvelope) {
+      responseEnvelope.setAesKey(aesKey);
+      cmd = responseEnvelope.getCommand() as OperationLogCommand;
+      if (cmd.getResponse() != CommandResponse.SUCCESS) {
+        throw new Error("Failed get FR response");
+      }
+      return {
+        sequence: cmd.getSequence(),
+        data: cmd.getLogs()
+      }
+    } else {
+      throw new Error("No response to get OperationLog");
+    }
+  }
+
   protected async macro_readAllDeviceInfo(aesKey?: Buffer): Promise<DeviceInfoType> {
     if (typeof aesKey == "undefined") {
       if (this.privateData.aesKey) {
@@ -1277,6 +1313,9 @@ export abstract class TTLockApi extends EventEmitter {
   }
 
   protected async macro_adminLogin(): Promise<boolean> {
+    if (this.adminAuth) {
+      return true;
+    }
     try {
       console.log("========= check admin");
       const psFromLock = await this.checkAdminCommand();
@@ -1285,6 +1324,7 @@ export abstract class TTLockApi extends EventEmitter {
         console.log("========= check random");
         await this.checkRandomCommand(psFromLock);
         console.log("========= check random");
+        this.adminAuth = true;
         return true;
       } else {
         console.error("Invalid psFromLock received", psFromLock);

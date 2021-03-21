@@ -105,3 +105,5 @@ dist
 
 package-lock.json
 lockData.json
+docs/capture/
+myEnv.sh

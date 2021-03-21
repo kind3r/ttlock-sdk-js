@@ -3,6 +3,12 @@
 import { EventEmitter } from "events";
 import { LockType } from "../constant/Lock";
 
+export interface TTDeviceParams {
+  isUnlock: boolean,
+  hasEvents: boolean,
+  batteryCapacity: boolean
+}
+
 export class TTDevice extends EventEmitter {
   // public data
   id: string = "";
@@ -27,8 +33,9 @@ export class TTDevice extends EventEmitter {
   /** @type {byte} */
   lockType: LockType = LockType.UNKNOWN;
   isTouch: boolean = false;
-  isSettingMode: boolean = false;
   isUnlock: boolean = false;
+  hasEvents: boolean = true;
+  isSettingMode: boolean = false;
   /** @type {byte} */
   txPowerLevel: number = 0;
   /** @type {byte} */

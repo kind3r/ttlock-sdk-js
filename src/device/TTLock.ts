@@ -1,7 +1,7 @@
 'use strict';
 
 import { CommandEnvelope } from "../api/CommandEnvelope";
-import { Fingerprint, ICCard, KeyboardPassCode, PassageModeData } from "../api/Commands";
+import { Fingerprint, ICCard, KeyboardPassCode, LogEntry, PassageModeData } from "../api/Commands";
 import { CodeSecret } from "../api/Commands/InitPasswordsCommand";
 import { AudioManage } from "../constant/AudioManage";
 import { ConfigRemoteUnlock } from "../constant/ConfigRemoteUnlock";
@@ -13,6 +13,7 @@ import { PassageModeOperate } from "../constant/PassageModeOperate";
 import { TTLockData, TTLockPrivateData } from "../store/TTLockData";
 import { sleep } from "../util/timingUtil";
 import { TTBluetoothDevice } from "./TTBluetoothDevice";
+import { TTDeviceParams } from "./TTDevice";
 import { TTLockApi } from "./TTLockApi";
 
 export interface TTLock {
@@ -22,6 +23,7 @@ export interface TTLock {
   on(event: "disconnected", listener: (lock: TTLock) => void): this;
   on(event: "locked", listener: (lock: TTLock) => void): this;
   on(event: "unlocked", listener: (lock: TTLock) => void): this;
+  // on(event: "newEvents", listener: (lock: TTLock) => void): this;
   /** Emited when an IC Card is ready to be scanned */
   on(event: "scanICStart", listener: (lock: TTLock) => void): this;
   /** Emited when a fingerprint is ready to be scanned */
@@ -42,6 +44,7 @@ export class TTLock extends TTLockApi implements TTLock {
     this.device.on("dataReceived", this.onDataReceived.bind(this));
     this.device.on("connected", this.onConnected.bind(this));
     this.device.on("disconnected", this.onDisconnected.bind(this));
+    this.device.on("paramsChanged", this.onParamsChanged.bind(this));
   }
 
   getAddress(): string {
@@ -479,12 +482,12 @@ export class TTLock extends TTLockApi implements TTLock {
         if (!this.isConnected()) {
           throw new Error("Lock is not connected");
         }
-  
+
         try {
-            console.log("========= lockSound");
-            this.lockSound = await this.audioManageCommand();
-            console.log("========= lockSound:", this.lockSound);
-  
+          console.log("========= lockSound");
+          this.lockSound = await this.audioManageCommand();
+          console.log("========= lockSound:", this.lockSound);
+
         } catch (error) {
           console.error("Error getting lock sound status", error);
         }
@@ -1219,6 +1222,37 @@ export class TTLock extends TTLockApi implements TTLock {
     return this.remoteUnlock;
   }
 
+  async getOperationLog(all: boolean = false): Promise<LogEntry[]> {
+    if (!this.initialized) {
+      throw new Error("Lock is in pairing mode");
+    }
+
+    if (!this.isConnected()) {
+      throw new Error("Lock is not connected");
+    }
+
+    let operations: LogEntry[] = [];
+
+    try {
+      let sequence = 0xffff;
+      if (all) {
+        sequence = 0;
+      }
+      do {
+        console.log("========= get OperationLog", sequence);
+        const response = await this.getOperationLogCommand(sequence);
+        sequence = response.sequence;
+        for (let log of response.data) {
+          operations.push(log);
+        }
+      } while (sequence > 0);
+    } catch (error) {
+      console.error(error);
+    }
+
+    return operations;
+  }
+
   private onDataReceived(command: CommandEnvelope) {
     // is this just a notification (like the lock was locked/unlocked etc.)
     if (this.privateData.aesKey) {
@@ -1284,8 +1318,21 @@ export class TTLock extends TTLockApi implements TTLock {
 
   private async onDisconnected(): Promise<void> {
     this.connected = false;
+    this.adminAuth = false;
     this.connecting = false;
     this.emit("disconnected", this);
+  }
+
+  private async onParamsChanged(params: TTDeviceParams): Promise<void> {
+    this.updateFromDevice();
+    console.log("updating params", params);
+    // if (params.isUnlock === true) {
+    //   if (this.lockedStatus == LockedStatus.LOCKED) {
+    //     this.emit("locked", this);
+    //   } else {
+    //     this.emit("unlocked", this);
+    //   }
+    // }
   }
 
   getLockData(): TTLockData | void {
