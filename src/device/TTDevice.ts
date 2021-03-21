@@ -3,12 +3,6 @@
 import { EventEmitter } from "events";
 import { LockType } from "../constant/Lock";
 
-export interface TTDeviceParams {
-  isUnlock: boolean,
-  hasEvents: boolean,
-  batteryCapacity: boolean
-}
-
 export class TTDevice extends EventEmitter {
   // public data
   id: string = "";

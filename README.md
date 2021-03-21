@@ -27,15 +27,16 @@ Feeling generous and want to support my work, here is [my PayPal link](https://p
 - [X] add/edit/remove fingerprints
 - [X] add/edit/remove IC Cards 
 - [X] get operation log
+- [X] detect lock/unlock events*
 
 ## Planned development
+- [ ] categorize and translate LogOperate
 - [ ] add some logger to separate debug events from normal ones
 - [ ] proper timezone support
 - [ ] cyclic based validity setup for credentials (ex.: Mo-Fr from 9AM to 5PM)
 - [ ] API documentation
-- [ ] receive lock/unlock events*
 
-> *) Receiving events is not possible at the moment as the Android SDK does not have this implemented (for obvious reasons, the phone is not always connected to the lock via BLE). It should be possible to analize the gateway and extract the commands required to activate the events.
+> *) See [Monitoring for lock/unlock events](#Monitoring-for-lock/unlock-events).
 
 ## **Known issues and limitations**
 - Pairing the lock can sometimes fail. It is recommended to pair the lock before installing it on the door so you can use the button on the back to factory reset it.
@@ -155,6 +156,26 @@ Disable the anoying beeps.
 Get the log of operations from the lock (lock, unlock, add/edit/remove credentials etc.).
 
 `npm run get-operations`
+
+### Monitoring for lock/unlock events
+
+Detecting lock/unlock events is possible by using a passive scan and monitoring changes in `params byte` of the advertising data. 
+
+```
+0000 0000
+|||| ||||__ (  1) isUnlock
+|||| |||___ (  2) new operation log events
+|||| ||____ (  4) isSettingMode
+|||| |_____ (  8) isTouch
+||||_______ ( 16) parkStatus
+|||________ ( 32) 
+||_________ ( 64) 
+|__________ (128) 
+```
+
+This will tell us when new operation logs are available which we can fetch to (hopefully) figure out what happend. Unfortunatelly auto-lock events are not recorded in this log, so a combination of 'new operation' bit detection together with isUnlock bit has to be used. Also, because advertising packets are sent whenever the lock wants to send them, change detection is not realtime (still, within a maximum of 10s interval).
+
+`npm run listen`
 
 ## Credits
 

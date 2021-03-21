@@ -1,5 +1,6 @@
 'use strict';
 
+import { LogEntry } from "../api/Commands";
 import { CodeSecret } from "../api/Commands/InitPasswordsCommand";
 import { AdminType } from "../device/AdminType";
 
@@ -23,4 +24,6 @@ export interface TTLockData {
   lockedStatus: number;
   /** Lock private data */
   privateData: TTLockPrivateData;
+  /** Operation Log entries */
+  operationLog?: LogEntry[];
 }

@@ -5,7 +5,7 @@ import { LockType, LockVersion } from "../constant/Lock";
 import { CharacteristicInterface, DeviceInterface, ServiceInterface } from "../scanner/DeviceInterface";
 import { ScannerInterface } from "../scanner/ScannerInterface";
 import { sleep } from "../util/timingUtil";
-import { TTDevice, TTDeviceParams } from "./TTDevice";
+import { TTDevice } from "./TTDevice";
 
 const CRLF = "0d0a";
 const MTU = 20;
@@ -13,8 +13,8 @@ const MTU = 20;
 export interface TTBluetoothDevice {
   on(event: "connected", listener: () => void): this;
   on(event: "disconnected", listener: () => void): this;
+  on(event: "updated", listener: () => void): this;
   on(event: "dataReceived", listener: (command: CommandEnvelope) => void): this;
-  on(event: "paramsChanged", listener: (params: TTDeviceParams) => void): this;
 }
 
 export class TTBluetoothDevice extends TTDevice implements TTBluetoothDevice {
@@ -54,6 +54,8 @@ export class TTBluetoothDevice extends TTDevice implements TTBluetoothDevice {
         this.parseManufacturerData(this.device.manufacturerData);
       }
     }
+
+    this.emit("updated");
   }
 
   async connect(): Promise<boolean> {
@@ -324,6 +326,7 @@ export class TTBluetoothDevice extends TTDevice implements TTBluetoothDevice {
     if (manufacturerData.length < 15) {
       throw new Error("Invalid manufacturer data length:" + manufacturerData.length.toString());
     }
+
     var offset = 0;
     this.protocolType = manufacturerData.readInt8(offset++);
     this.protocolVersion = manufacturerData.readInt8(offset++);
@@ -392,25 +395,9 @@ export class TTBluetoothDevice extends TTDevice implements TTBluetoothDevice {
 
     const params = manufacturerData.readInt8(offset);
 
-    // track changes in some parameters between device advertisements
-    let oldVal: any;
-    let paramsChanged: TTDeviceParams = {
-      isUnlock: false,
-      hasEvents: false,
-      batteryCapacity: false,
-    };
-
-    oldVal = this.isUnlock;
     this.isUnlock = ((params & 0x1) == 0x1);
-    if (oldVal != this.isUnlock) {
-      paramsChanged.isUnlock = true;
-    }
 
-    oldVal = this.hasEvents;
     this.hasEvents = ((params & 0x2) == 0x2);
-    if (this.hasEvents && !oldVal) {
-      paramsChanged.hasEvents = true;
-    }
 
     this.isSettingMode = ((params & 0x4) != 0x0);
     if (LockVersion.getLockType(this) == LockType.LOCK_TYPE_V3 || LockVersion.getLockType(this) == LockType.LOCK_TYPE_V3_CAR) {
@@ -434,11 +421,7 @@ export class TTBluetoothDevice extends TTDevice implements TTBluetoothDevice {
     }
     offset++;
 
-    oldVal = this.batteryCapacity;
     this.batteryCapacity = manufacturerData.readInt8(offset);
-    if (oldVal != this.batteryCapacity) {
-      paramsChanged.batteryCapacity = true;
-    }
 
     // offset += 3 + 4; // Offset in original SDK is + 3, but in scans it's actually +4
     offset = manufacturerData.length - 6; // let's just get the last 6 bytes
@@ -449,12 +432,5 @@ export class TTBluetoothDevice extends TTDevice implements TTBluetoothDevice {
     });
     macArr.reverse();
     this.address = macArr.join(':').toUpperCase();
-
-    if (paramsChanged.isUnlock || paramsChanged.hasEvents || paramsChanged.batteryCapacity) {
-      // console.log("Emiting paramsChanged");
-      this.emit("paramsChanged", paramsChanged);
-    } else {
-      // console.log("Nothing changed");
-    }
   }
 }

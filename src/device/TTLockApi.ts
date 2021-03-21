@@ -54,6 +54,12 @@ export interface OperationLogResponse {
   data: LogEntry[];
 }
 
+export interface LockParamsChanged {
+  lockedStatus: boolean,
+  newEvents: boolean,
+  batteryCapacity: boolean
+}
+
 export abstract class TTLockApi extends EventEmitter {
   protected initialized: boolean;
   protected device: TTBluetoothDevice;
@@ -72,6 +78,7 @@ export abstract class TTLockApi extends EventEmitter {
   protected lockedStatus: LockedStatus;
   protected newEvents: boolean;
   protected deviceInfo?: DeviceInfoType;
+  protected operationLog: LogEntry[];
 
   // sensitive data
   protected privateData: PrivateDataType;
@@ -91,6 +98,7 @@ export abstract class TTLockApi extends EventEmitter {
     this.batteryCapacity = this.device.batteryCapacity;
     this.rssi = this.device.rssi;
     this.initialized = false; // just workaround for TypeScript
+    this.operationLog = [];
     if (typeof data != "undefined") {
       this.updateLockData(data);
     } else {
@@ -98,14 +106,27 @@ export abstract class TTLockApi extends EventEmitter {
     }
   }
 
-  updateFromDevice() {
+  updateFromTTDevice() {
+    let paramsChanged: LockParamsChanged = {
+      batteryCapacity: this.batteryCapacity != this.device.batteryCapacity,
+      newEvents: (this.device.hasEvents && this.newEvents != this.device.hasEvents),
+      lockedStatus: false
+    }
     this.batteryCapacity = this.device.batteryCapacity;
     this.rssi = this.device.rssi;
     this.initialized = !this.device.isSettingMode;
+    this.newEvents = this.device.hasEvents;
     if (this.device.isUnlock) {
+      paramsChanged.lockedStatus = this.lockedStatus != LockedStatus.UNLOCKED;
       this.lockedStatus = LockedStatus.UNLOCKED;
     } else {
+      paramsChanged.lockedStatus = this.lockedStatus != LockedStatus.LOCKED;
       this.lockedStatus = LockedStatus.LOCKED;
+    }
+
+    if (paramsChanged.batteryCapacity || paramsChanged.lockedStatus || paramsChanged.newEvents) {
+      console.log("Emmiting paramsChanged", paramsChanged);
+      this.emit("updated", this, paramsChanged);
     }
   }
 
@@ -117,6 +138,9 @@ export abstract class TTLockApi extends EventEmitter {
     this.privateData.admin = privateData.admin;
     this.privateData.adminPasscode = privateData.adminPasscode;
     this.privateData.pwdInfo = privateData.pwdInfo;
+    if (typeof data.operationLog != "undefined") {
+      this.operationLog = data.operationLog;
+    }
     this.initialized = true;
   }
 

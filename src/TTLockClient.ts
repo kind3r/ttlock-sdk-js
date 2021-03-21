@@ -20,9 +20,9 @@ export interface Settings {
 export interface TTLockClient {
   on(event: "ready", listener: () => void): this;
   on(event: "foundLock", listener: (lock: TTLock) => void): this;
-  on(event: "updatedLock", listened: (lock: TTLock) => void): this;
   on(event: "scanStart", listener: () => void): this;
   on(event: "scanStop", listener: () => void): this;
+  on(event: "updatedLockData", listener: () => void): this;
 }
 
 export class TTLockClient extends events.EventEmitter implements TTLockClient {
@@ -117,9 +117,9 @@ export class TTLockClient extends events.EventEmitter implements TTLockClient {
 
   getLockData(): TTLockData[] {
     const lockData: TTLockData[] = [];
-    this.lockData.forEach((lock) => {
+    for (let [id, lock] of this.lockData) {
       lockData.push(lock);
-    })
+    }
     return lockData;
   }
 
@@ -140,21 +140,15 @@ export class TTLockClient extends events.EventEmitter implements TTLockClient {
     // Is it a Lock device ?
     if (device.lockType != LockType.UNKNOWN) {
       
-      if (this.lockDevices.has(device.address)) {
-        const lock = this.lockDevices.get(device.address);
-        if (typeof lock != "undefined") {
-          // update lock
-          lock.updateFromDevice();
-          this.emit("updatedLock", lock);
-        }
-      } else {
+      if (!this.lockDevices.has(device.address)) {
         const data = this.lockData.get(device.address);
         const lock = new TTLock(device, data);
         this.lockDevices.set(device.address, lock);
-        lock.on("lockUpdated", (lock) => {
+        lock.on("dataUpdated", (lock) => {
           const lockData = lock.getLockData();
-          if (lockData) {
+          if (typeof lockData != "undefined") {
             this.lockData.set(lockData.address, lockData);
+            this.emit("updatedLockData");
           }
         });
         lock.on("lockReset", (address) => {

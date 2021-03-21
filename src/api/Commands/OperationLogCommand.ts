@@ -5,6 +5,7 @@ import { LogOperate } from "../../constant/LogOperate";
 import { Command } from "../Command";
 
 export interface LogEntry {
+  recordNumber: number;
   recordType: LogOperate;
   recordId?: number;
   uid?: number;
@@ -35,6 +36,7 @@ export class OperationLogCommand extends Command {
           const recLen = this.commandData.readUInt8(index++);
           const recStart = index;
           let log: LogEntry = {
+            recordNumber: this.sequence - 1,
             recordType: this.commandData.readUInt8(index++),
             operateDate: "20" + this.commandData.readUInt8(index++).toString().padStart(2, '0') // year
               + this.commandData.readUInt8(index++).toString().padStart(2, '0') // month

@@ -54,19 +54,19 @@ export class BluetoothLeService extends EventEmitter implements BluetoothLeServi
     return this.scanner.getState() == "scanning";
   }
 
-  private onDiscover(btDevice: DeviceInterface) {
+  private onDiscover(device: DeviceInterface) {
     // TODO: move device storage to TTLockClient
     // check if the device was previously discovered and update
-    if(this.btDevices.has(btDevice.id)) {
-      const device = this.btDevices.get(btDevice.id);
-      if (typeof device != 'undefined') {
-        device.updateFromDevice(btDevice);
-        this.emit("discover", device);
+    if(this.btDevices.has(device.id)) {
+      const ttDevice = this.btDevices.get(device.id);
+      if (typeof ttDevice != 'undefined') {
+        ttDevice.updateFromDevice(device);
+        // this.emit("discover", ttDevice);
       }
     } else {
-      const device = TTBluetoothDevice.createFromDevice(btDevice, this.scanner);
-      this.btDevices.set(btDevice.id, device);
-      this.emit("discover", device);
+      const ttDevice = TTBluetoothDevice.createFromDevice(device, this.scanner);
+      this.btDevices.set(device.id, ttDevice);
+      this.emit("discover", ttDevice);
     }
   }
 }
