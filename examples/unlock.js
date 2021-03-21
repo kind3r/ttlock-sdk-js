@@ -1,39 +1,11 @@
 'use strict';
 
 const { TTLockClient, sleep } = require('../dist');
-const fs = require('fs/promises');
 const settingsFile = "lockData.json";
 
 async function doStuff() {
-  let lockData;
-  try {
-    await fs.access(settingsFile);
-    const lockDataTxt = (await fs.readFile(settingsFile)).toString();
-    lockData = JSON.parse(lockDataTxt);
-  } catch (error) {}
-
-  let options = {
-    lockData: lockData,
-    scannerType: "noble",
-    scannerOptions: {
-      websocketHost: "127.0.0.1",
-      websocketPort: 2846
-    },
-    // uuids: []
-  };
-
-  if (process.env.WEBSOCKET_ENABLE == "1") {
-    options.scannerType = "noble-websocket";
-    if (process.env.WEBSOCKET_HOST) {
-      options.scannerOptions.websocketHost = process.env.WEBSOCKET_HOST;
-    }
-    if (process.env.WEBSOCKET_PORT) {
-      options.scannerOptions.websocketPort = process.env.WEBSOCKET_PORT;
-    }
-    if (process.env.WEBSOCKET_KEY) {
-      options.scannerOptions.websocketAesKey = process.env.WEBSOCKET_KEY;
-    }
-  }
+  let lockData = await require("./common/loadData")(settingsFile);
+  let options = require("./common/options")(lockData);
 
   const client = new TTLockClient(options);
   await client.prepareBTService();
@@ -50,13 +22,8 @@ async function doStuff() {
       console.log();
       const unlock = await lock.unlock();
       await lock.disconnect();
-      const newLockData = client.getLockData();
-      console.log(JSON.stringify(newLockData));
-      try {
-        await fs.writeFile(settingsFile, Buffer.from(JSON.stringify(newLockData)));
-      } catch (error) {
-        process.exit(1);
-      }
+      
+      await require("./common/saveData")(settingsFile, client.getLockData());
 
       process.exit(0);
     }
