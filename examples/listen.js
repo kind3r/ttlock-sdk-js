@@ -30,6 +30,9 @@ async function doStuff() {
     if (process.env.WEBSOCKET_PORT) {
       options.scannerOptions.websocketPort = process.env.WEBSOCKET_PORT;
     }
+    if (process.env.WEBSOCKET_KEY) {
+      options.scannerOptions.websocketAesKey = process.env.WEBSOCKET_KEY;
+    }
   }
 
   const client = new TTLockClient(options);
@@ -40,11 +43,20 @@ async function doStuff() {
     console.log(lock.toJSON());
     console.log();
     
+    lock.on("locked", (l) => {
+      console.log("Lock was locked");
+    });
+
+    lock.on("unlocked", (l) => {
+      console.log("Lock was unlocked");
+    })
+
     if (lock.isInitialized() && lock.isPaired()) {
       lock.on("disconnected", () => {
-        setTimeout(() => {
-          lock.connect();
-        }, 3000);
+        // setTimeout(() => {
+        //   lock.connect();
+        // }, 3000);
+        client.startScanLock();
       });
       await lock.connect();
       console.log("Connected to a known lock");

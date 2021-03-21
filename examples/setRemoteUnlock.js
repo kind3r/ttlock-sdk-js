@@ -30,6 +30,9 @@ async function doStuff() {
     if (process.env.WEBSOCKET_PORT) {
       options.scannerOptions.websocketPort = process.env.WEBSOCKET_PORT;
     }
+    if (process.env.WEBSOCKET_KEY) {
+      options.scannerOptions.websocketAesKey = process.env.WEBSOCKET_KEY;
+    }
   }
 
   const client = new TTLockClient(options);
