@@ -23,6 +23,8 @@ export interface TTLockClient {
   on(event: "scanStart", listener: () => void): this;
   on(event: "scanStop", listener: () => void): this;
   on(event: "updatedLockData", listener: () => void): this;
+  on(event: "monitorStart", listener: () => void): this;
+  on(event: "monitorStop", listener: () => void): this;
 }
 
 export class TTLockClient extends events.EventEmitter implements TTLockClient {
@@ -33,6 +35,8 @@ export class TTLockClient extends events.EventEmitter implements TTLockClient {
   lockData: Map<string, TTLockData>;
   private adapterReady: boolean;
   private lockDevices: Map<string, TTLock> = new Map();
+  private scanning: boolean = false;
+  private monitoring: boolean = false;
 
   constructor(options: Settings) {
     super();
@@ -64,10 +68,10 @@ export class TTLockClient extends events.EventEmitter implements TTLockClient {
   async prepareBTService(): Promise<boolean> {
     if (this.bleService == null) {
       this.bleService = new BluetoothLeService(this.uuids, this.scannerType, this.scannerOptions);
-      this.bleService.on("ready", () => { this.adapterReady = true; this.emit("ready")});
+      this.bleService.on("ready", () => { this.adapterReady = true; this.emit("ready") });
+      this.bleService.on("scanStart", this.onScanStart.bind(this));
+      this.bleService.on("scanStop", this.onScanStop.bind(this));
       this.bleService.on("discover", this.onScanResult.bind(this));
-      this.bleService.on("scanStart", () => this.emit("scanStart"));
-      this.bleService.on("scanStop", () => this.emit("scanStop"));
       // wait for adapter to become ready
       let counter = 5;
       do {
@@ -88,29 +92,47 @@ export class TTLockClient extends events.EventEmitter implements TTLockClient {
   }
 
   async startScanLock(): Promise<boolean> {
-    if (this.bleService != null) {
-      return await this.bleService.startScan();
+    if (this.bleService != null && !this.scanning && !this.monitoring) {
+      this.scanning = true;
+      this.scanning = await this.bleService.startScan();
+      return this.scanning;
     }
     return false;
   }
 
   async stopScanLock(): Promise<boolean> {
-    if (this.bleService != null) {
+    if (this.bleService != null && this.isScanning()) {
       return await this.bleService.stopScan();
     }
     return true;
   }
 
   async startMonitor(): Promise<boolean> {
-    if (this.bleService != null) {
-      return await this.bleService.startScan(true);
+    if (this.bleService != null && !this.scanning && !this.monitoring) {
+      this.monitoring = true;
+      this.monitoring = await this.bleService.startScan(true);
+      return this.monitoring;
+    }
+    return false;
+  }
+
+  async stopMonitor(): Promise<boolean> {
+    if (this.bleService != null && this.isMonitoring()) {
+      return await this.bleService.stopScan();
     }
     return false;
   }
 
   isScanning(): boolean {
     if (this.bleService) {
-      return this.bleService.isScanning();
+      return (this.bleService.isScanning() && this.scanning);
+    }
+    return false;
+  }
+
+  isMonitoring(): boolean {
+    if (this.bleService) {
+      return (this.bleService.isScanning() && this.monitoring);
     }
     return false;
   }
@@ -136,10 +158,28 @@ export class TTLockClient extends events.EventEmitter implements TTLockClient {
     }
   }
 
+  private onScanStart(): void {
+    if (this.scanning) {
+      this.emit("scanStart");
+    } else if (this.monitoring) {
+      this.emit("monitorStart");
+    }
+  }
+
+  private onScanStop(): void {
+    if (this.scanning) {
+      this.emit("scanStop");
+      this.scanning = false;
+    } else if (this.monitoring) {
+      this.emit("monitorStop");
+      this.monitoring = false;
+    }
+  }
+
   private onScanResult(device: TTBluetoothDevice): void {
     // Is it a Lock device ?
     if (device.lockType != LockType.UNKNOWN) {
-      
+
       if (!this.lockDevices.has(device.address)) {
         const data = this.lockData.get(device.address);
         const lock = new TTLock(device, data);
@@ -157,7 +197,7 @@ export class TTLockClient extends events.EventEmitter implements TTLockClient {
 
         this.emit("foundLock", lock);
       }
-      
+
     }
   }
 }

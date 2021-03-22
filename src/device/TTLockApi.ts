@@ -1289,7 +1289,7 @@ export abstract class TTLockApi extends EventEmitter {
       responseEnvelope.setAesKey(aesKey);
       cmd = responseEnvelope.getCommand() as OperationLogCommand;
       if (cmd.getResponse() != CommandResponse.SUCCESS) {
-        throw new Error("Failed get FR response");
+        throw new Error("Failed get OperationLog response");
       }
       return {
         sequence: cmd.getSequence(),
