@@ -1237,22 +1237,24 @@ export class TTLock extends TTLockApi implements TTLock {
 
     let newOperations: LogEntry[] = [];
 
-    try {
-      let sequence = 0xffff;
-      if (all && (noCache || this.operationLog.length == 0)) {
-        sequence = 0;
-      }
-      do {
-        console.log("========= get OperationLog", sequence);
-        const response = await this.getOperationLogCommand(sequence);
-        sequence = response.sequence;
-        for (let log of response.data) {
-          newOperations.push(log);
-          this.operationLog[log.recordNumber] = log;
+    if (this.hasNewEvents() || noCache) {
+      try {
+        let sequence = 0xffff;
+        if (all && (noCache || this.operationLog.length == 0)) {
+          sequence = 0;
         }
-      } while (sequence > 0);
-    } catch (error) {
-      console.error(error);
+        do {
+          console.log("========= get OperationLog", sequence);
+          const response = await this.getOperationLogCommand(sequence);
+          sequence = response.sequence;
+          for (let log of response.data) {
+            newOperations.push(log);
+            this.operationLog[log.recordNumber] = log;
+          }
+        } while (sequence > 0);
+      } catch (error) {
+        console.error(error);
+      }
     }
 
     if (newOperations.length > 0) {
@@ -1313,6 +1315,7 @@ export class TTLock extends TTLockApi implements TTLock {
         }
       } catch (error) {
         console.error("Failed reading all general data from lock", error);
+        // TODO: judge the error and fail connect
       }
     } else {
       if (this.device.isUnlock) {
