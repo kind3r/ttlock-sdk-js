@@ -1,6 +1,6 @@
 'use strict';
 
-const { TTLockClient, sleep, PassageModeType } = require('../dist');
+const { TTLockClient, LogOperateNames } = require('../dist');
 const settingsFile = "lockData.json";
 
 async function doStuff() {
@@ -20,9 +20,13 @@ async function doStuff() {
       console.log("Trying to get Operations Log");
       console.log();
       console.log();
-      const result = await lock.getOperationLog(true);
+      // make a copy so we don't save the record names
+      const results = JSON.parse(JSON.stringify(await lock.getOperationLog(true)));
       await lock.disconnect();
-      console.log(result);
+      for (let result of results) {
+        result.recordTypeName = LogOperateNames[result.recordType];
+      }
+      console.log(results);
 
       await require("./common/saveData")(settingsFile, client.getLockData());
 

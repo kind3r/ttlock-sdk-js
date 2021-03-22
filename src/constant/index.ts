@@ -23,3 +23,4 @@ export { OperationType } from "./OperationType";
 export { PassageModeOperate } from "./PassageModeOperate";
 export { PassageModeType } from "./PassageModeType";
 export { PwdOperateType } from "./PwdOperateType";
+export { LogOperateNames } from "./LogOperateNames";
