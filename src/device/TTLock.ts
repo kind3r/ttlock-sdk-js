@@ -1237,33 +1237,115 @@ export class TTLock extends TTLockApi implements TTLock {
 
     let newOperations: LogEntry[] = [];
 
-    if (this.hasNewEvents() || noCache) {
-      try {
-        let sequence = 0xffff;
-        if (all && (noCache || this.operationLog.length == 0)) {
-          sequence = 0;
-        }
-        do {
-          console.log("========= get OperationLog", sequence);
+    // in all mode do the following
+    // - get new operations
+    // - sort operation log by recordNumber
+    // - create list of missing/invalid recordNumber
+    // - fetch those records
+
+    const maxRetry = 3;
+
+    // first, always get new operations
+    if (this.hasNewEvents()) {
+      let sequence = 0xffff;
+      let retry = 0;
+      do {
+        console.log("========= get OperationLog", sequence);
+        try {
           const response = await this.getOperationLogCommand(sequence);
           sequence = response.sequence;
           for (let log of response.data) {
             newOperations.push(log);
             this.operationLog[log.recordNumber] = log;
           }
-        } while (sequence > 0);
-      } catch (error) {
-        console.error(error);
-      }
+          retry = 0;
+        } catch (error) {
+          retry++;
+        }
+      } while (sequence > 0 && retry < maxRetry);
     }
 
-    if (newOperations.length > 0) {
-      this.emit("dataUpdated", this);
-    }
-
+    // if all operations were requested
     if (all) {
+      let operations = [];
+      let maxRecordNumber = 0;
+      if (noCache) {
+        // if cache will not be used start with only the new operations
+        for (let log of newOperations) {
+          operations[log.recordNumber] = log;
+          if (log.recordNumber > maxRecordNumber) {
+            maxRecordNumber = log.recordNumber;
+          }
+        }
+      } else {
+        // otherwise copy current operation log
+        for (let log of this.operationLog) {
+          operations[log.recordNumber] = log;
+          if (log.recordNumber > maxRecordNumber) {
+            maxRecordNumber = log.recordNumber;
+          }
+        }
+      }
+      if (operations.length == 0) {
+        // if no operations, start with 0 and keep going
+        let sequence = 0;
+        let failedSequences = 0;
+        let retry = 0;
+        do {
+          console.log("========= get OperationLog", sequence);
+          try {
+            const response = await this.getOperationLogCommand(sequence);
+            sequence = response.sequence;
+            console.log("========= get OperationLog next seq", sequence);
+            for (let log of response.data) {
+              operations[log.recordNumber] = log;
+            }
+            retry = 0;
+          } catch (error) {
+            retry++;
+            // some operations just can't be read
+            if (retry == maxRetry) {
+              console.log("========= get OperationLog skip seq", sequence);
+              sequence++;
+              failedSequences++;
+              retry = 0;
+            }
+          }
+        } while (sequence > 0 && retry < maxRetry);
+      } else {
+        // if we have operations, check for missing
+        let missing = [];
+        for (let i = 0; i < maxRecordNumber; i++) {
+          if (typeof operations[i] == "undefined" || operations[i] == null) {
+            missing.push(i);
+          }
+        }
+        for (let sequence of missing) {
+          let retry = 0;
+          let success = false;
+          do {
+            console.log("========= get OperationLog", sequence);
+            try {
+              const response = await this.getOperationLogCommand(sequence);
+              for (let log of response.data) {
+                operations[log.recordNumber] = log;
+              }
+              retry = 0;
+              success = true;
+            } catch (error) {
+              retry++;
+            }
+          } while (!success && retry < maxRetry);
+        }
+      }
+
+      this.operationLog = operations;
+      this.emit("dataUpdated", this);
       return this.operationLog;
     } else {
+      if (newOperations.length > 0) {
+        this.emit("dataUpdated", this);
+      }
       return newOperations;
     }
   }

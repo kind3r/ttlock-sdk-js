@@ -21,10 +21,12 @@ async function doStuff() {
       console.log();
       console.log();
       // make a copy so we don't save the record names
-      const results = JSON.parse(JSON.stringify(await lock.getOperationLog(true)));
+      const results = JSON.parse(JSON.stringify(await lock.getOperationLog(true, true)));
       await lock.disconnect();
       for (let result of results) {
-        result.recordTypeName = LogOperateNames[result.recordType];
+        if (result) {
+          result.recordTypeName = LogOperateNames[result.recordType];
+        }
       }
       console.log(results);
 
