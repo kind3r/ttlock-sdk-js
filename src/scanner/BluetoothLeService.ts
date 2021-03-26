@@ -54,6 +54,10 @@ export class BluetoothLeService extends EventEmitter implements BluetoothLeServi
     return this.scanner.getState() == "scanning";
   }
 
+  forgetDevice(id: string) {
+    this.btDevices.delete(id);
+  }
+
   private onDiscover(device: DeviceInterface) {
     // TODO: move device storage to TTLockClient
     // check if the device was previously discovered and update

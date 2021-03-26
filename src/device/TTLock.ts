@@ -19,7 +19,7 @@ export interface TTLock {
   /** Event used by TTLockClient to update it's internal lock data */
   on(event: "dataUpdated", listener: (lock: TTLock) => void): this;
   on(event: "updated", listener: (lock: TTLock, paramsChanged: LockParamsChanged) => void): this;
-  on(event: "lockReset", listener: (address: string) => void): this;
+  on(event: "lockReset", listener: (address: string, id: string) => void): this;
   on(event: "connected", listener: (lock: TTLock) => void): this;
   on(event: "disconnected", listener: (lock: TTLock) => void): this;
   on(event: "locked", listener: (lock: TTLock) => void): this;
@@ -259,9 +259,9 @@ export class TTLock extends TTLockApi implements TTLock {
         console.log("========= set adminPasscode:", adminPasscode);
       }
 
-      console.log("========= init passwords");
-      pwdInfo = await this.initPasswordsCommand(aesKey);
-      console.log("========= init passwords:", pwdInfo);
+      // console.log("========= init passwords");
+      // pwdInfo = await this.initPasswordsCommand(aesKey);
+      // console.log("========= init passwords:", pwdInfo);
 
       if (featureList.has(FeatureValue.CONFIG_GATEWAY_UNLOCK)) {
         console.log("========= remoteUnlock");
@@ -555,9 +555,8 @@ export class TTLock extends TTLockApi implements TTLock {
       return false;
     }
 
-    // TODO: disconnect, cleanup etc.
-
-    this.emit("lockReset", this.device.address);
+    await this.disconnect();
+    this.emit("lockReset", this.device.address, this.device.id);
     return true;
   }
 

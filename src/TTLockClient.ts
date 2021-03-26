@@ -191,8 +191,11 @@ export class TTLockClient extends events.EventEmitter implements TTLockClient {
             this.emit("updatedLockData");
           }
         });
-        lock.on("lockReset", (address) => {
+        lock.on("lockReset", (address, id) => {
           this.lockData.delete(address);
+          this.lockDevices.delete(address);
+          this.bleService?.forgetDevice(id);
+          this.emit("updatedLockData");
         });
 
         this.emit("foundLock", lock);

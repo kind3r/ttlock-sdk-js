@@ -5,6 +5,7 @@ import { CommandType } from "../../constant/CommandType";
 import { Command } from "../Command";
 
 export interface CodeSecret {
+  year: number,
   code: number,
   secret: string
 }
@@ -18,14 +19,14 @@ export class InitPasswordsCommand extends Command {
   }
 
   build(): Buffer {
-    this.pwdInfo = this.generateCodeSecret();
     let year = this.calculateYear();
+    this.pwdInfo = this.generateCodeSecret(year);
 
     // first data byte is the year
     let buffers: Buffer[] = [
       Buffer.from([year % 100]), // last 2 digits of the year
     ];
-    for (let i = 0; i < 10; i++, year++) {
+    for (let i = 0; i < 10; i++) {
       buffers.push(this.combineCodeSecret(this.pwdInfo[i].code, this.pwdInfo[i].secret));
     }
 
@@ -38,14 +39,15 @@ export class InitPasswordsCommand extends Command {
     }
   }
 
-  private generateCodeSecret(): CodeSecret[] {
+  private generateCodeSecret(year: number): CodeSecret[] {
     let generated: CodeSecret[] = [];
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < 10; i++, year++) {
       let secret: string = "";
       for (let j = 0; j < 10; j++) {
         secret += Math.floor(Math.random() * 10).toString();
       }
       generated.push({
+        year: year % 100,
         code: Math.floor(Math.random() * 1071),
         secret: secret
       });
@@ -59,7 +61,7 @@ export class InitPasswordsCommand extends Command {
     res[1] = code << 4 & 0xFF;
     const bigSec = BigInt(secret);
     const sec = Buffer.alloc(8);
-    sec.writeBigUInt64BE(bigSec);
+    sec.writeBigInt64BE(bigSec);
     sec.copy(res, 2, 4);
     res[1] = res[1] | sec[3];
     return res;

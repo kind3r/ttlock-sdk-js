@@ -12,7 +12,7 @@ export class ControlRemoteUnlockCommand extends Command {
   private batteryCapacity?: number;
 
   protected processData(): void {
-    if (this.commandData && this.commandData.length > 0) {
+    if (this.commandData && this.commandData.length > 1) {
       this.batteryCapacity = this.commandData.readUInt8(0);
       this.opType = this.commandData.readUInt8(1);
       if (this.opType == ConfigRemoteUnlock.OP_TYPE_SEARCH && this.commandData.length > 2) {
