@@ -1254,8 +1254,10 @@ export class TTLock extends TTLockApi implements TTLock {
           const response = await this.getOperationLogCommand(sequence);
           sequence = response.sequence;
           for (let log of response.data) {
-            newOperations.push(log);
-            this.operationLog[log.recordNumber] = log;
+            if (log) {
+              newOperations.push(log);
+              this.operationLog[log.recordNumber] = log;
+            }
           }
           retry = 0;
         } catch (error) {
@@ -1271,17 +1273,21 @@ export class TTLock extends TTLockApi implements TTLock {
       if (noCache) {
         // if cache will not be used start with only the new operations
         for (let log of newOperations) {
-          operations[log.recordNumber] = log;
-          if (log.recordNumber > maxRecordNumber) {
-            maxRecordNumber = log.recordNumber;
+          if (log) {
+            operations[log.recordNumber] = log;
+            if (log.recordNumber > maxRecordNumber) {
+              maxRecordNumber = log.recordNumber;
+            }
           }
         }
       } else {
         // otherwise copy current operation log
         for (let log of this.operationLog) {
-          operations[log.recordNumber] = log;
-          if (log.recordNumber > maxRecordNumber) {
-            maxRecordNumber = log.recordNumber;
+          if (log) {
+            operations[log.recordNumber] = log;
+            if (log.recordNumber > maxRecordNumber) {
+              maxRecordNumber = log.recordNumber;
+            }
           }
         }
       }
