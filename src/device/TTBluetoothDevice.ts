@@ -428,7 +428,11 @@ export class TTBluetoothDevice extends TTDevice implements TTBluetoothDevice {
     const macBuf = manufacturerData.slice(offset, offset + 6);
     var macArr: string[] = [];
     macBuf.forEach((m: number) => {
-      macArr.push(m.toString(16));
+      let hexByte: string = m.toString(16);
+      if (hexByte.length < 2) {
+        hexByte = "0" + hexByte;
+      }
+      macArr.push(hexByte);
     });
     macArr.reverse();
     this.address = macArr.join(':').toUpperCase();
