@@ -171,7 +171,12 @@ export class ManageICCommand extends Command {
     }
   }
 
-  setAdd(): void {
+  setAdd(cardNumber?: string, startDate?: string, endDate?: string): void {
+    if (typeof cardNumber != "undefined" && typeof startDate != "undefined" && typeof endDate != "undefined") {
+      this.cardNumber = cardNumber;
+      this.startDate = startDate;
+      this.endDate = endDate;
+    }
     this.opType = ICOperate.ADD;
   }
 

@@ -841,9 +841,10 @@ export class TTLock extends TTLockApi implements TTLock {
    * Add an IC Card
    * @param startDate Valid from YYYYMMDDHHmm
    * @param endDate Valid to YYYYMMDDHHmm
+   * @param cardNumber serial number of an already known card
    * @returns serial number of the card that was added
    */
-  async addICCard(startDate: string, endDate: string): Promise<string> {
+  async addICCard(startDate: string, endDate: string, cardNumber?: string): Promise<string> {
     if (!this.initialized) {
       throw new Error("Lock is in pairing mode");
     }
@@ -856,16 +857,21 @@ export class TTLock extends TTLockApi implements TTLock {
       throw new Error("Lock is not connected");
     }
 
-    let data = "";
+    let data: string = "";
 
     try {
       if (await this.macro_adminLogin()) {
         console.log("========= add IC Card");
-        const cardNumber = await this.addICCommand();
-        console.log("========= updating IC Card", cardNumber);
-        const response = await this.updateICCommand(cardNumber, startDate, endDate);
-        console.log("========= updating IC Card", response);
-        data = cardNumber;
+        if (typeof cardNumber != "undefined") {
+          const addedCardNumber = await this.addICCommand(cardNumber, startDate, endDate);
+          console.log("========= add IC Card", addedCardNumber);
+        } else {
+          const addedCardNumber = await this.addICCommand();
+          console.log("========= updating IC Card", addedCardNumber);
+          const response = await this.updateICCommand(addedCardNumber, startDate, endDate);
+          console.log("========= updating IC Card", response);
+          data = addedCardNumber;
+        }
       }
     } catch (error) {
       console.error("Error while adding IC Card", error);

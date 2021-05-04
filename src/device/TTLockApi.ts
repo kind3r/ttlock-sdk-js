@@ -1002,7 +1002,7 @@ export abstract class TTLockApi extends EventEmitter {
     }
   }
 
-  protected async addICCommand(aesKey?: Buffer): Promise<string> {
+  protected async addICCommand(cardNumber?: string, startDate?: string, endDate?: string, aesKey?: Buffer): Promise<string> {
     if (typeof aesKey == "undefined") {
       if (this.privateData.aesKey) {
         aesKey = this.privateData.aesKey;
@@ -1013,13 +1013,20 @@ export abstract class TTLockApi extends EventEmitter {
     const requestEnvelope = CommandEnvelope.createFromLockType(this.device.lockType, aesKey);
     requestEnvelope.setCommandType(CommandType.COMM_IC_MANAGE);
     let cmd = requestEnvelope.getCommand() as ManageICCommand;
-    cmd.setAdd();
+    if (typeof cardNumber != "undefined" && typeof startDate != "undefined" && typeof endDate != "undefined") {
+      cmd.setAdd(cardNumber, startDate, endDate);
+    } else {
+      cmd.setAdd();
+    }
     let responseEnvelope = await this.device.sendCommand(requestEnvelope);
     if (responseEnvelope) {
       responseEnvelope.setAesKey(aesKey);
       cmd = responseEnvelope.getCommand() as ManageICCommand;
-      if (cmd.getResponse() != CommandResponse.SUCCESS || cmd.getType() != ICOperate.STATUS_ENTER_ADD_MODE) {
-        throw new Error("Failed add IC mode response");
+      if (cmd.getResponse() != CommandResponse.SUCCESS || (cmd.getType() != ICOperate.STATUS_ENTER_ADD_MODE && cmd.getType() != ICOperate.STATUS_ADD_SUCCESS)) {
+        throw new Error("Failed add IC response");
+      }
+      if (typeof cardNumber != "undefined" && typeof startDate != "undefined" && typeof endDate != "undefined") {
+        return cmd.getCardNumber();
       }
       this.emit("scanICStart", this);
       responseEnvelope = await this.device.waitForResponse();
@@ -1035,7 +1042,7 @@ export abstract class TTLockApi extends EventEmitter {
         throw new Error("No response to add IC");
       }
     } else {
-      throw new Error("No response to add IC mode");
+      throw new Error("No response to add IC");
     }
   }
 
