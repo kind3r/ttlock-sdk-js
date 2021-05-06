@@ -82,7 +82,8 @@ export class NobleCharacteristic extends EventEmitter implements CharacteristicI
     this.device.checkBusy();
     if (!this.device.connected) {
       this.device.resetBusy();
-      throw new Error("NobleDevice is not connected");
+      return false;
+      // throw new Error("NobleDevice is not connected");
     }
 
     let written = false;

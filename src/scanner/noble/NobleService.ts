@@ -40,10 +40,10 @@ export class NobleService implements ServiceInterface {
 
   async discoverCharacteristics(): Promise<Map<string, CharacteristicInterface>> {
     try {
+      this.characteristics = new Map();
       this.device.checkBusy();
       const characteristics = await this.service.discoverCharacteristicsAsync();
       this.device.resetBusy();
-      this.characteristics = new Map();
       characteristics.forEach((characteristic) => {
         const c = new NobleCharacteristic(this.device, characteristic);
         this.characteristics.set(c.getUUID(), c);

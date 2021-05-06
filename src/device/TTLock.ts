@@ -85,15 +85,17 @@ export class TTLock extends TTLockApi implements TTLock {
     }
     this.connecting = true;
     this.skipDataRead = skipDataRead;
-    // const connected = await this.device.connect();
-    this.device.connect();
+    const connected = await this.device.connect();
     let timeoutCycles = timeout * 10;
-    // if (connected) {
+    if (connected) {
+      console.log("Lock waiting for connection to be completed");
       do {
         await sleep(100);
         timeoutCycles--;
       } while (!this.connected && timeoutCycles > 0 && this.connecting);
-    // }
+    } else {
+      console.log("Lock connect failed");
+    }
     this.skipDataRead = false;
     this.connecting = false;
     // it is possible that even tho device initially connected, reading initial data will disconnect

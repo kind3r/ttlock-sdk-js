@@ -1,9 +1,10 @@
 'use strict';
 
 import { DeviceInterface, ServiceInterface } from "../DeviceInterface";
-import { Peripheral } from "@abandonware/noble";
+import { Peripheral, Service } from "@abandonware/noble";
 import { EventEmitter } from "events";
 import { NobleService } from "./NobleService";
+import { sleep } from "../../util/timingUtil";
 
 export class NobleDevice extends EventEmitter implements DeviceInterface {
   id: string;
@@ -12,6 +13,7 @@ export class NobleDevice extends EventEmitter implements DeviceInterface {
   address: string;
   addressType: string;
   connectable: boolean;
+  connecting: boolean = false;
   connected: boolean = false;
   rssi: number;
   mtu: number = 20;
@@ -36,6 +38,7 @@ export class NobleDevice extends EventEmitter implements DeviceInterface {
     } else {
       this.manufacturerData = Buffer.from([]);
     }
+    this.peripheral.on("connect", this.onConnect.bind(this));
     this.peripheral.on("disconnect", this.onDisconnect.bind(this));
     this.services = new Map();
   }
@@ -70,14 +73,43 @@ export class NobleDevice extends EventEmitter implements DeviceInterface {
     return this.busy;
   }
 
-  async connect(): Promise<boolean> {
-    if (this.connectable && !this.connected) {
-      await this.peripheral.connectAsync();
-      this.connected = true;
+  async connect(timeout: number = 10): Promise<boolean> {
+    if (this.connectable && !this.connected && !this.connecting) {
+      if (this.peripheral.state == "connected") {
+        this.connected = true;
+        return true;
+      }
+      this.connecting = true;
+      console.log("Peripheral connect start");
+      this.peripheral.connect((error) => {
+        if (typeof error != "undefined" && error != null) {
+          console.log("Peripheral connect error:", error);
+        } else {
+          console.log("Peripheral state:", this.peripheral.state);
+          if (this.peripheral.state == "connected") {
+            this.connected = true;
+            this.connecting = false;
+          }
+        }
+      });
+      let timeoutCycles = timeout * 10;
+      do {
+        await sleep(100);
+        timeoutCycles--;
+      } while (!this.connected && timeoutCycles > 0 && this.connecting);
+      await sleep(10);
+      if (!this.connected) {
+        this.connecting = false;
+        try {
+          this.peripheral.cancelConnect();
+        } catch (error) { }
+        return false;
+      }
+      console.log("Device emiting connected");
       this.emit("connected");
       return true;
     }
-    console.log("Peripheral state", this.peripheral.state);
+    console.log("Peripheral state:", this.peripheral.state);
     return false;
   }
 
@@ -129,13 +161,27 @@ export class NobleDevice extends EventEmitter implements DeviceInterface {
         this.resetBusy();
         throw new Error("NobleDevice not connected");
       }
-      const services = await this.peripheral.discoverServicesAsync();
-      this.resetBusy();
+      let timeoutCycles = 10 * 100;
+      let services: Service[] = [];
       this.services = new Map();
-      services.forEach((service) => {
-        const s = new NobleService(this, service);
-        this.services.set(s.getUUID(), s);
+      this.peripheral.discoverServices([], (error, discoveredServices) => {
+        services = discoveredServices;
       });
+      do {
+        await sleep(10);
+        timeoutCycles--;
+      } while (services.length == 0 && timeoutCycles > 0 && this.connected);
+      // const services = await this.peripheral.discoverServicesAsync();
+      this.resetBusy();
+      if (!this.connected) {
+        return this.services;
+      }
+      if (services.length > 0) {
+        for (let service of services) {
+          const s = new NobleService(this, service);
+          this.services.set(s.getUUID(), s);
+        }
+      }
       return this.services;
     } catch (error) {
       console.error(error);
@@ -173,8 +219,19 @@ export class NobleDevice extends EventEmitter implements DeviceInterface {
     }
   }
 
-  onDisconnect() {
+  onConnect(error: string) {
+    console.log("Peripheral connect triggered");
+    // if (typeof error != "undefined" && error != "" && error != null) {
+    //   this.connected = false;
+    // } else {
+    //   this.connected = true;
+    // }
+    // this.connecting = false;
+  }
+
+  onDisconnect(error: string) {
     this.connected = false;
+    this.connecting = false;
     this.resetBusy();
     this.services = new Map();
     this.emit("disconnected");

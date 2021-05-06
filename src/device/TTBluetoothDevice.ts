@@ -64,8 +64,11 @@ export class TTBluetoothDevice extends TTDevice implements TTBluetoothDevice {
       await this.scanner.stopScan();
       if (await this.device.connect()) {
         // TODO: something happens here (disconnect) and it's stuck in limbo
+        console.log("BLE Device reading basic info");
         await this.readBasicInfo();
+        console.log("BLE Device read basic info");
         const subscribed = await this.subscribe();
+        console.log("BLE Device subscribed");
         if (!subscribed) {
           await this.device.disconnect();
           return false;
@@ -99,20 +102,26 @@ export class TTBluetoothDevice extends TTDevice implements TTBluetoothDevice {
 
   private async readBasicInfo() {
     if (typeof this.device != "undefined") {
+      console.log("BLE Device discover services start");
       await this.device.discoverServices();
+      console.log("BLE Device discover services end");
       // update some basic information
       let service: ServiceInterface | undefined;
       if (this.device.services.has("1800")) {
         service = this.device.services.get("1800");
         if (typeof service != "undefined") {
+          console.log("BLE Device read characteristics start");
           await service.readCharacteristics();
+          console.log("BLE Device read characteristics end");
           this.putCharacteristicValue(service, "2a00", "name");
         }
       }
       if (this.device.services.has("180a")) {
         service = this.device.services.get("180a");
         if (typeof service != "undefined") {
+          console.log("BLE Device read characteristics start");
           await service.readCharacteristics();
+          console.log("BLE Device read characteristics end");
           this.putCharacteristicValue(service, "2a29", "manufacturer");
           this.putCharacteristicValue(service, "2a24", "model");
           this.putCharacteristicValue(service, "2a27", "hardware");
