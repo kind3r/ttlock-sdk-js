@@ -193,9 +193,15 @@ export class TTLock extends TTLockApi implements TTLock {
       console.log("========= admin:", admin);
 
       // Calibrate time
-      console.log("========= time");
-      await this.calibrateTimeCommand(aesKey);
-      console.log("========= time");
+      // this seems to fail on some locks
+      // see https://github.com/kind3r/hass-addons/issues/11
+      try {
+        console.log("========= time");
+        await this.calibrateTimeCommand(aesKey);
+        console.log("========= time");
+      } catch (error) {
+        console.error(error);
+      }
 
       // Search device features
       console.log("========= feature list");
