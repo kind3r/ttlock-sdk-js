@@ -17,7 +17,7 @@ export class CommandEnvelope {
   private scene: number = -1;
   private organization: number = -1;
   private sub_organization: number = -1;
-  private commandType: CommandType = -1;
+  private commandType: CommandType = CommandType.COMM_UNSET;
   private encrypt: number = 0;
   private data?: Buffer;
   private lockType: LockType = LockType.UNKNOWN;
@@ -254,7 +254,7 @@ export class CommandEnvelope {
    * 
    */
   private generateCommand() {
-    if (this.commandType != -1 && typeof this.command == "undefined") {
+    if (this.commandType != CommandType.COMM_UNSET && typeof this.command == "undefined") {
       // only generate if no command exists
       if (typeof this.data != "undefined") {
         if (this.data.length > 0 && typeof this.aesKey != "undefined") {
