@@ -1,6 +1,8 @@
 'use strict';
 
 export enum CommandType {
+  COMM_UNSET = -1,
+
   COMM_INITIALIZATION = 0x45, // 'E'
   COMM_GET_AES_KEY = 0x19,
   COMM_RESPONSE = 0x54, // 'T'
